@@ -46,3 +46,19 @@
 .login-btn:hover {
   background-color: #218838;
 }
+
+.btn-descargar {
+  background-color: #ffc107; /* Amarillo llamativo */
+  color: #000;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-descargar:hover {
+  background-color: #e0a800;
+  transform: scale(1.05);
+}
