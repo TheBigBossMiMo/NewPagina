@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import VehicleRegistration from './components/VehicleRegistration';
 import Login from './components/Login';
 import './App.css';
+import AdminPanel from './pages/AdminPanel';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/registro" element={<VehicleRegistration />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/admin" element={<AdminPanel />} />
           </Routes>
         </main>
 
