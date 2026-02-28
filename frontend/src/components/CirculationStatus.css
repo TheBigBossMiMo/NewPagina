@@ -1,61 +1,150 @@
+/* Variables locales para este componente */
 .status-container {
+  --cs-primary: #2563eb;
+  --cs-primary-hover: #1d4ed8;
+  --cs-bg: #ffffff;
+  --cs-input-bg: #f9fafb;
+  --cs-text-main: #1f2937;
+  --cs-text-muted: #6b7280;
+  --cs-border: #e5e7eb;
+  --cs-success-bg: #ecfdf5;
+  --cs-success-text: #065f46;
+  --cs-success-border: #34d399;
+  --cs-danger-bg: #fef2f2;
+  --cs-danger-text: #991b1b;
+  --cs-danger-border: #f87171;
+  
   max-width: 550px;
   margin: 2rem auto;
-  padding: 2rem;
+  padding: 2.5rem 2rem;
   text-align: center;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  background-color: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  background-color: var(--cs-bg);
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--cs-border);
 }
 
+.status-container h2 {
+  color: var(--cs-text-main);
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Formulario y controles */
 .status-form .input-group {
   display: flex;
   gap: 12px;
   justify-content: center;
-  margin-bottom: 20px;
-  flex-wrap: wrap; /* Por si se ve en celulares */
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.status-form input, .status-form select {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  border-radius: 6px;
+.status-form input, 
+.status-form select {
+  padding: 12px 16px;
+  border: 1px solid var(--cs-border);
+  background-color: var(--cs-input-bg);
+  color: var(--cs-text-main);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
 }
 
-.status-form input:focus, .status-form select:focus {
-  outline: 2px solid var(--primary-color);
-  border-color: transparent;
+.status-form input {
+  flex: 1; /* Permite que el input tome el espacio disponible */
+  min-width: 0; /* Previene desbordamientos en flexbox */
+}
+
+.status-form input:focus, 
+.status-form select:focus {
+  border-color: var(--cs-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  background-color: var(--cs-bg);
 }
 
 .status-form button {
-  padding: 0.75rem 1.5rem;
-  background-color: var(--primary-color);
+  padding: 12px 24px;
+  background-color: var(--cs-primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: background-color 0.2s, transform 0.1s;
+  white-space: nowrap;
 }
 
 .status-form button:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--cs-primary-hover);
 }
 
+.status-form button:active {
+  transform: scale(0.97);
+}
+
+/* Tarjeta de resultados con animación */
 .result-card {
-  margin-top: 24px;
   padding: 1.5rem;
-  border-radius: 8px;
-  color: white;
+  border-radius: 12px;
   font-size: 1.1rem;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border: 1px solid transparent;
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.result-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.result-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+/* Variantes de estado */
 .result-card.circula {
-  background-color: var(--success-color);
+  background-color: var(--cs-success-bg);
+  color: var(--cs-success-text);
+  border-color: var(--cs-success-border);
 }
 
 .result-card.no-circula {
-  background-color: var(--danger-color);
+  background-color: var(--cs-danger-bg);
+  color: var(--cs-danger-text);
+  border-color: var(--cs-danger-border);
+}
+
+/* --- RESPONSIVO --- */
+@media (max-width: 600px) {
+  .status-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .status-form .input-group {
+    flex-direction: column;
+    align-items: stretch; /* Estira los elementos al 100% del ancho */
+  }
+
+  .status-form input,
+  .status-form select,
+  .status-form button {
+    width: 100%;
+    box-sizing: border-box;
+  }
 }

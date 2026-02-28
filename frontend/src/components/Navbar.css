@@ -62,3 +62,60 @@
   background-color: #e0a800;
   transform: scale(1.05);
 }
+
+/* --- ESTILOS RESPONSIVOS NAVBAR --- */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (max-width: 850px) {
+  .mobile-menu-btn {
+    display: block; /* Mostramos la hamburguesa */
+  }
+
+  .navbar-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #002244;
+    flex-direction: column;
+    padding: 1rem 0;
+    gap: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    
+    /* Animación de entrada */
+    transform: translateY(-150%);
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+    z-index: -1; 
+  }
+
+  .navbar {
+    position: relative; /* Para que el menú absoluto se guíe de aquí */
+    z-index: 1000;
+  }
+
+  .navbar-links.active {
+    transform: translateY(0);
+    opacity: 1;
+    z-index: 999;
+  }
+
+  .navbar-links li {
+    width: 100%;
+    text-align: center;
+  }
+
+  .login-btn, .btn-descargar {
+    display: inline-block;
+    width: 80%;
+    margin: 0 auto;
+  }
+}

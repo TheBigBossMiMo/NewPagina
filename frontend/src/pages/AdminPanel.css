@@ -1,101 +1,179 @@
+/* Variables locales para el Panel de Admin */
 .admin-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 0 20px;
+  --ap-bg: #f8fafc;
+  --ap-card-bg: #ffffff;
+  --ap-border: #e2e8f0;
+  --ap-text-main: #0f172a;
+  --ap-text-muted: #64748b;
+  
+  /* Colores de estado (Semáforo de Contingencia) */
+  --ap-normal: #10b981;    /* Verde */
+  --ap-fase1: #f59e0b;     /* Naranja */
+  --ap-fase2: #ef4444;     /* Rojo */
+  
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--ap-text-main);
 }
 
+/* Cabecera del Panel */
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--ap-border);
+}
+
+.admin-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
 }
 
 .admin-badge {
-  background-color: var(--danger-color);
+  background-color: #1e293b;
   color: white;
-  padding: 5px 10px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.85rem;
-  font-weight: bold;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* Layout del Dashboard */
 .dashboard-grid {
   display: grid;
+  /* El 2fr 1fr le da más peso a los controles que a las estadísticas */
   grid-template-columns: 2fr 1fr;
-  gap: 20px;
-}
-
-@media (max-width: 768px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+  gap: 1.5rem;
 }
 
 .dashboard-card {
-  background-color: var(--card-bg);
+  background-color: var(--ap-card-bg);
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--ap-border);
+  display: flex;
+  flex-direction: column;
 }
 
 .dashboard-card h3 {
   margin-top: 0;
-  color: #66b0ff;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 10px;
-  margin-bottom: 20px;
+  color: var(--ap-text-main);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+/* Control de Contingencia */
+.estado-actual {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: var(--ap-text-muted);
 }
 
 .estado-texto {
-  font-size: 1.2rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background-color: #f1f5f9;
 }
-.estado-texto.fase-0 { color: var(--success-color); }
-.estado-texto.fase-1 { color: #fd7e14; } /* Naranja */
-.estado-texto.fase-2 { color: var(--danger-color); }
 
+/* Colores dinámicos del estado actual */
+.estado-texto.fase-0 { color: var(--ap-normal); background-color: #ecfdf5; }
+.estado-texto.fase-1 { color: var(--ap-fase1); background-color: #fffbeb; }
+.estado-texto.fase-2 { color: var(--ap-fase2); background-color: #fef2f2; }
+
+/* Botones tipo Toggle Switch */
 .btn-group {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: auto; /* Empuja los botones al fondo de la tarjeta */
   flex-wrap: wrap;
 }
 
 .btn-control {
   flex: 1;
-  padding: 10px 15px;
-  border: 2px solid transparent;
-  border-radius: 6px;
-  font-weight: bold;
+  min-width: 120px;
+  padding: 12px 16px;
+  border: 2px solid var(--ap-border);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  transition: all 0.2s;
+  background-color: transparent;
+  color: var(--ap-text-muted);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
-.btn-normal.active { background-color: var(--success-color); border-color: #1e7e34; }
-.btn-fase1.active { background-color: #fd7e14; border-color: #d39e00; }
-.btn-fase2.active { background-color: var(--danger-color); border-color: #bd2130; }
 
 .btn-control:hover:not(.active) {
-  border-color: #888;
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  color: var(--ap-text-main);
 }
 
+/* Estados Activos (Rellenos) */
+.btn-control.active {
+  color: white;
+  border-color: transparent;
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-normal.active { background-color: var(--ap-normal); }
+.btn-fase1.active { background-color: var(--ap-fase1); }
+.btn-fase2.active { background-color: var(--ap-fase2); }
+
+/* Estadísticas */
 .stats-list {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .stats-list li {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px dashed var(--border-color);
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--ap-border);
+  color: var(--ap-text-muted);
+  font-size: 0.95rem;
 }
 
 .stats-list li:last-child {
   border-bottom: none;
+  padding-bottom: 0;
+}
+
+.stats-list strong {
+  color: var(--ap-text-main);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* --- RESPONSIVO --- */
+@media (max-width: 768px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr; /* Apila las tarjetas en pantallas pequeñas */
+  }
+
+  .btn-group {
+    flex-direction: column; /* Apila los botones si no hay espacio */
+  }
 }

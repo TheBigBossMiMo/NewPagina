@@ -2,36 +2,52 @@ import { useState } from 'react';
 import './Profile.css';
 
 const Profile = () => {
-  // Estado inicial simulando datos de un usuario logueado
+  // Estado principal de los datos
   const [userData, setUserData] = useState({
-    nombre: 'Conductor Designado',
+    nombre: 'Gerardo R.', // Puse un nombre de ejemplo más real
     correo: 'conductor@ejemplo.com',
     telefono: '55 1234 5678',
     notificaciones: true
   });
 
+  // Estado secundario para guardar el respaldo en caso de cancelar
+  const [originalData, setOriginalData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const handleChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setUserData({
-      ...userData,
-      [e.target.name]: value
-    });
+    const { name, value, type, checked } = e.target;
+    setUserData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleEdit = () => {
+    // Guardamos una copia exacta de los datos antes de empezar a editar
+    setOriginalData({ ...userData });
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    // Restauramos la copia de seguridad
+    setUserData(originalData);
+    setIsEditing(false);
   };
 
   const handleSave = (e) => {
     e.preventDefault();
     setIsEditing(false);
-    // Aquí iría la petición PUT/PATCH al Backend
-    alert('¡Perfil actualizado con éxito!\n(Los cambios se guardarán en la BD próximamente)');
+    // Aquí iría la petición PUT/PATCH al Backend (Sprint 2/3)
+    console.log('Actualizando perfil en BD:', userData);
+    alert('✅ ¡Perfil actualizado con éxito!');
   };
 
   return (
     <div className="profile-container">
       <div className="profile-header">
-        <div className="profile-avatar">👤</div>
+        <div className="profile-avatar">👨‍💻</div>
         <h2>Mi Perfil</h2>
+        <p className="profile-subtitle">Gestiona tu información personal</p>
       </div>
 
       <div className="profile-card">
@@ -72,6 +88,7 @@ const Profile = () => {
               value={userData.telefono} 
               onChange={handleChange} 
               disabled={!isEditing}
+              placeholder="Ej. 55 0000 0000"
             />
           </div>
 
@@ -93,23 +110,22 @@ const Profile = () => {
               <button 
                 type="button" 
                 className="btn-edit" 
-                onClick={() => setIsEditing(true)}
+                onClick={handleEdit}
               >
-                Editar Datos
+                ✏️ Editar Datos
               </button>
             ) : (
               <>
-                <button type="submit" className="btn-save">Guardar Cambios</button>
-                <button 
-                  type="button" 
-                  className="btn-cancel" 
-                  onClick={() => setIsEditing(false)}
-                >
-                  Cancelar
+                <button type="button" className="btn-cancel" onClick={handleCancel}>
+                  ✖ Cancelar
+                </button>
+                <button type="submit" className="btn-save">
+                  💾 Guardar Cambios
                 </button>
               </>
             )}
           </div>
+          
         </form>
       </div>
     </div>

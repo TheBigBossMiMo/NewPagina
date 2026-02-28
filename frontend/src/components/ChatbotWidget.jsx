@@ -15,7 +15,6 @@ const ChatbotWidget = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Auto-scroll cada vez que cambian los mensajes o el estado de escribiendo
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
@@ -24,13 +23,12 @@ const ChatbotWidget = () => {
     e.preventDefault();
     if (!input.trim()) return;
 
-    // 1. Mostrar el mensaje del usuario
     const userMessage = { sender: 'user', text: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true); 
 
-    // 2. Simular la respuesta del Bot (Aquí luego conectaremos tu Backend)
+    // Simulación del Backend
     setTimeout(() => {
       setIsTyping(false);
       setMessages(prev => [...prev, { 
@@ -42,12 +40,13 @@ const ChatbotWidget = () => {
 
   return (
     <div className="chatbot-container">
-      {/* Botón flotante para abrir el chat */}
-      <button className={`chatbot-toggle ${isOpen ? 'hidden' : ''}`} onClick={() => setIsOpen(true)}>
+      <button 
+        className={`chatbot-toggle ${isOpen ? 'hidden' : ''}`} 
+        onClick={() => setIsOpen(true)}
+      >
         💬 Asistente
       </button>
 
-      {/* Ventana del Chat */}
       <div className={`chatbot-window ${isOpen ? 'active' : ''}`}>
         <div className="chatbot-header">
           <div className="chatbot-title">
@@ -57,7 +56,9 @@ const ChatbotWidget = () => {
               <span className="online-status">En línea</span>
             </div>
           </div>
-          <button className="close-btn" onClick={() => setIsOpen(false)}>✖</button>
+          <button className="close-btn" onClick={() => setIsOpen(false)} aria-label="Cerrar chat">
+            ✖
+          </button>
         </div>
         
         <div className="chatbot-messages">
@@ -69,14 +70,14 @@ const ChatbotWidget = () => {
             </div>
           ))}
           
-          {/* Indicador de "Escribiendo..." */}
           {isTyping && (
             <div className="message-wrapper bot">
               <div className="message-bubble typing-indicator">
-                <span>.</span><span>.</span><span>.</span>
+                <span></span><span></span><span></span>
               </div>
             </div>
           )}
+          {/* Ref anclado al final para el scroll automático */}
           <div ref={messagesEndRef} />
         </div>
 

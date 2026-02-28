@@ -1,7 +1,11 @@
 import { useState } from 'react';
-import './VehicleRegistration.css'; // Crearemos este archivo en el siguiente paso
+import './VehicleRegistration.css';
 
 const VehicleRegistration = () => {
+  // Calculamos el año dinámicamente para el atributo "max" (+1 por los modelos del siguiente año)
+  const currentYear = new Date().getFullYear();
+  const maxModelYear = currentYear + 1;
+
   const [formData, setFormData] = useState({
     placa: '',
     modelo: '',
@@ -9,69 +13,79 @@ const VehicleRegistration = () => {
   });
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // Si es la placa, forzamos mayúsculas
+    const finalValue = name === 'placa' ? value.toUpperCase() : value;
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: finalValue
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     // Aquí después conectaremos con el Backend (HU-01)
     console.log('Datos a enviar al backend:', formData);
-    alert('Vehículo registrado localmente (Mock)');
+    alert('✅ Vehículo registrado correctamente (Mock)');
   };
 
   return (
     <div className="registration-container">
-      <h2>Registrar Nuevo Vehículo</h2>
+      <h2>Registrar Vehículo</h2>
+      <p className="registration-subtitle">Añade un auto a tu garaje para gestionar su circulación.</p>
+      
       <form onSubmit={handleSubmit} className="registration-form">
         
         <div className="form-group">
-          <label htmlFor="placa">Placa (ej. ABC-123-A):</label>
+          <label htmlFor="placa">Placa</label>
           <input 
             type="text" 
             id="placa" 
             name="placa" 
             value={formData.placa} 
             onChange={handleChange} 
-            placeholder="Ingresa la placa"
+            placeholder="Ej. ABC-123-A"
             required 
             maxLength="10"
+            autoComplete="off"
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="modelo">Modelo (Año):</label>
+          <label htmlFor="modelo">Modelo (Año)</label>
           <input 
             type="number" 
             id="modelo" 
             name="modelo" 
             value={formData.modelo} 
             onChange={handleChange} 
-            placeholder="Ej. 2020"
+            placeholder={`Ej. ${currentYear}`}
             required 
             min="1950" 
-            max="2025"
+            max={maxModelYear}
           />
         </div>
 
         <div className="form-group">
-          <label htmlFor="holograma">Holograma:</label>
+          <label htmlFor="holograma">Holograma</label>
           <select 
             id="holograma" 
             name="holograma" 
             value={formData.holograma} 
             onChange={handleChange}
           >
-            <option value="00">00</option>
-            <option value="0">0</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
+            <option value="00">Holograma 00</option>
+            <option value="0">Holograma 0</option>
+            <option value="1">Holograma 1</option>
+            <option value="2">Holograma 2</option>
           </select>
         </div>
 
-        <button type="submit" className="submit-btn">Guardar Vehículo</button>
+        <button type="submit" className="submit-btn">
+          <span>💾</span> Guardar Vehículo
+        </button>
       </form>
     </div>
   );

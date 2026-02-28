@@ -7,15 +7,15 @@ import Login from './components/Login';
 import ChatbotWidget from './components/ChatbotWidget';
 import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
-import './App.css';
 
 function App() {
   return (
     <Router>
-      <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <div className="app-layout">
         <Navbar />
         
-        <main className="main-content" style={{ flex: '1', padding: '2rem 0' }}>
+        {/* El main-content empuja al Footer hacia abajo gracias a flex: 1 */}
+        <main className="main-content">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/registro" element={<VehicleRegistration />} />

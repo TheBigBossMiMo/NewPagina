@@ -1,59 +1,126 @@
+/* Variables locales (usamos un tono verde/éxito como primario para "Guardar") */
 .registration-container {
+  --vr-primary: #10b981; 
+  --vr-primary-hover: #059669;
+  --vr-bg: #ffffff;
+  --vr-input-bg: #f9fafb;
+  --vr-text-main: #1f2937;
+  --vr-text-muted: #6b7280;
+  --vr-border: #e5e7eb;
+
   max-width: 450px;
-  margin: 2rem auto;
-  padding: 2.5rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  background-color: var(--card-bg);
+  margin: 3rem auto;
+  padding: 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  background-color: var(--vr-bg);
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--vr-border);
+  
+  animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .registration-container h2 {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: var(--vr-text-main);
+  font-size: 1.5rem;
+}
+
+.registration-subtitle {
+  text-align: center;
+  color: var(--vr-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+  margin-top: 0;
 }
 
 .registration-form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
   text-align: left;
+  gap: 6px;
 }
 
 .form-group label {
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #e0e0e0;
+  font-size: 0.85rem;
+  color: var(--vr-text-main);
 }
 
-.form-group input, .form-group select {
-  padding: 0.8rem;
-  border: 1px solid var(--border-color);
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  border-radius: 6px;
+.form-group input, 
+.form-group select {
+  padding: 12px 16px;
+  border: 1px solid var(--vr-border);
+  background-color: var(--vr-input-bg);
+  color: var(--vr-text-main);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.form-group input:focus, .form-group select:focus {
-  outline: 2px solid var(--primary-color);
+.form-group input:focus, 
+.form-group select:focus {
+  border-color: var(--vr-primary);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  background-color: var(--vr-bg);
+}
+
+/* Ajuste específico para el select para que se vea bien en todos los navegadores */
+.form-group select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1em;
+  padding-right: 2.5rem;
 }
 
 .submit-btn {
-  background-color: var(--success-color);
+  background-color: var(--vr-primary);
   color: white;
-  padding: 0.8rem;
+  padding: 14px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
   cursor: pointer;
   margin-top: 1rem;
+  transition: background-color 0.2s, transform 0.1s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
 .submit-btn:hover {
-  background-color: #218838;
+  background-color: var(--vr-primary-hover);
+}
+
+.submit-btn:active {
+  transform: scale(0.98);
+}
+
+/* --- RESPONSIVO --- */
+@media (max-width: 480px) {
+  .registration-container {
+    margin: 2rem 1rem;
+    padding: 2rem 1.5rem;
+  }
 }

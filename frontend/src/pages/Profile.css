@@ -1,85 +1,194 @@
+/* Variables locales para el Perfil */
 .profile-container {
+  --prof-primary: #2563eb;
+  --prof-primary-hover: #1d4ed8;
+  --prof-success: #10b981;
+  --prof-success-hover: #059669;
+  --prof-cancel-bg: #f1f5f9;
+  --prof-cancel-text: #475569;
+  --prof-cancel-hover: #e2e8f0;
+  --prof-bg: #ffffff;
+  --prof-input-bg: #f9fafb;
+  --prof-disabled-bg: #f3f4f6;
+  --prof-text-main: #1f2937;
+  --prof-text-muted: #6b7280;
+  --prof-border: #e5e7eb;
+
   max-width: 500px;
-  margin: 0 auto;
-  padding: 0 20px;
+  margin: 3rem auto;
+  padding: 0 1.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  
+  animation: slideUp 0.4s ease-out;
 }
 
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Cabecera y Avatar */
 .profile-header {
   text-align: center;
   margin-bottom: 2rem;
 }
 
 .profile-avatar {
-  font-size: 4rem;
-  background-color: var(--card-bg);
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
   width: 100px;
   height: 100px;
-  margin: 0 auto 10px;
+  margin: 0 auto 12px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  border: 2px solid var(--primary-color);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  border: 4px solid white;
 }
 
+.profile-header h2 {
+  margin: 0;
+  color: var(--prof-text-main);
+  font-size: 1.75rem;
+}
+
+.profile-subtitle {
+  color: var(--prof-text-muted);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+/* Tarjeta y Formulario */
 .profile-card {
-  background-color: var(--card-bg);
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+  background-color: var(--prof-bg);
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--prof-border);
 }
 
 .profile-form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.25rem;
 }
 
-/* Reutilizamos el estilo de .form-group que ya tienes globalmente o en otros archivos, 
-   pero le damos un toque específico si está deshabilitado */
-.profile-form input:disabled {
-  background-color: #222;
-  color: #888;
-  border-color: #333;
-  cursor: not-allowed;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
 }
 
+.form-group label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--prof-text-main);
+}
+
+/* Inputs habilitados (Editando) */
+.form-group input:not([type="checkbox"]) {
+  padding: 12px 16px;
+  border: 1px solid var(--prof-border);
+  background-color: var(--prof-input-bg);
+  color: var(--prof-text-main);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group input:not([type="checkbox"]):focus {
+  border-color: var(--prof-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  background-color: var(--prof-bg);
+}
+
+/* Inputs deshabilitados (Solo lectura) */
+.form-group input:disabled {
+  background-color: transparent;
+  color: var(--prof-text-muted);
+  border-color: transparent;
+  padding-left: 0; /* Quitamos el padding para que parezca texto normal */
+  font-weight: 500;
+  cursor: default;
+}
+
+/* Checkbox estilizado */
 .checkbox-group label {
   display: flex;
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  font-weight: normal;
-  color: #ccc;
+  font-weight: 500;
+  color: var(--prof-text-main);
+  margin-top: 0.5rem;
 }
 
 .checkbox-group input[type="checkbox"] {
   width: 18px;
   height: 18px;
+  accent-color: var(--prof-primary);
   cursor: inherit;
 }
 
+.checkbox-group input[type="checkbox"]:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Botones de acción */
 .profile-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 1rem;
+  gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--prof-border);
 }
 
 .profile-actions button {
   flex: 1;
   padding: 12px;
-  border-radius: 6px;
-  font-weight: bold;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
   border: none;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
 }
 
-.profile-actions button:hover {
-  opacity: 0.9;
+.profile-actions button:active {
+  transform: scale(0.97);
 }
 
-.btn-edit { background-color: var(--primary-color); color: white; }
-.btn-save { background-color: var(--success-color); color: white; }
-.btn-cancel { background-color: #555; color: white; }
+.btn-edit { 
+  background-color: var(--prof-primary); 
+  color: white; 
+}
+.btn-edit:hover { background-color: var(--prof-primary-hover); }
+
+.btn-save { 
+  background-color: var(--prof-success); 
+  color: white; 
+}
+.btn-save:hover { background-color: var(--prof-success-hover); }
+
+.btn-cancel { 
+  background-color: var(--prof-cancel-bg); 
+  color: var(--prof-cancel-text); 
+}
+.btn-cancel:hover { background-color: var(--prof-cancel-hover); }
+
+/* --- RESPONSIVO --- */
+@media (max-width: 480px) {
+  .profile-container { margin: 2rem auto; }
+  .profile-card { padding: 2rem 1.5rem; }
+  .profile-actions { flex-direction: column; }
+}

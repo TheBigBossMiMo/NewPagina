@@ -1,55 +1,131 @@
+/* Variables locales para el componente Login */
 .login-container {
-  max-width: 380px;
-  margin: 3rem auto;
-  padding: 2.5rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  background-color: var(--card-bg);
+  --log-primary: #2563eb;
+  --log-primary-hover: #1d4ed8;
+  --log-bg: #ffffff;
+  --log-input-bg: #f9fafb;
+  --log-text-main: #1f2937;
+  --log-text-muted: #6b7280;
+  --log-border: #e5e7eb;
+  --log-link: #3b82f6;
+
+  max-width: 400px;
+  margin: 4rem auto;
+  padding: 2.5rem 2.5rem;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  background-color: var(--log-bg);
   text-align: center;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--log-border);
+  
+  /* Animación suave al cargar el componente */
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-container h2 {
+  margin-top: 0;
+  color: var(--log-text-main);
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+  color: var(--log-text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+  margin-top: 0;
 }
 
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
-  margin-top: 1.5rem;
+  gap: 1.25rem;
+}
+
+/* Envoltura para separar el label del input visualmente */
+.input-wrapper {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 6px;
+}
+
+.input-wrapper label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--log-text-main);
 }
 
 .login-form input {
-  padding: 0.8rem;
-  border: 1px solid var(--border-color);
-  background-color: var(--input-bg);
-  color: var(--text-color);
-  border-radius: 6px;
+  padding: 12px 16px;
+  border: 1px solid var(--log-border);
+  background-color: var(--log-input-bg);
+  color: var(--log-text-main);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box; /* Asegura que el padding no rompa el ancho */
 }
 
 .login-form input:focus {
-  outline: 2px solid var(--primary-color);
+  border-color: var(--log-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  background-color: var(--log-bg);
 }
 
 .login-form button {
-  padding: 0.8rem;
-  background-color: var(--primary-color);
+  padding: 14px;
+  background-color: var(--log-primary);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   font-size: 1rem;
   margin-top: 0.5rem;
+  transition: background-color 0.2s, transform 0.1s;
 }
 
 .login-form button:hover {
-  background-color: var(--primary-hover);
+  background-color: var(--log-primary-hover);
+}
+
+.login-form button:active {
+  transform: scale(0.98);
 }
 
 .toggle-text {
   margin-top: 1.5rem;
-  color: #66b0ff;
-  cursor: pointer;
+  color: var(--log-text-muted);
   font-size: 0.95rem;
 }
 
-.toggle-text:hover {
+/* Separamos el enlace clickeable del texto normal para mejor UX */
+.toggle-text span {
+  color: var(--log-link);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.toggle-text span:hover {
+  color: var(--log-primary-hover);
   text-decoration: underline;
+}
+
+/* --- RESPONSIVO --- */
+@media (max-width: 480px) {
+  .login-container {
+    margin: 2rem 1rem;
+    padding: 2rem 1.5rem;
+  }
 }

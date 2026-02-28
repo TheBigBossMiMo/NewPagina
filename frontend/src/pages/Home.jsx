@@ -1,12 +1,18 @@
 import CirculationStatus from '../components/CirculationStatus';
+import './Home.css';
 
 const Home = () => {
   return (
-    <div className="home-page" style={{ padding: '2rem', textAlign: 'center' }}>
-      <h2>Bienvenido al portal ciudadano</h2>
-      <p>Verifica si tu vehículo puede transitar el día de hoy en la CDMX y el Estado de México.</p>
+    <div className="home-page">
+      <section className="hero-section">
+        <h1>Bienvenido al Portal Ciudadano</h1>
+        <p>
+          Verifica de manera rápida y segura si tu vehículo tiene permitido 
+          transitar el día de hoy en la CDMX y el Estado de México.
+        </p>
+      </section>
       
-      <div style={{ marginTop: '2rem' }}>
+      <div className="home-widget-container">
         <CirculationStatus />
       </div>
     </div>

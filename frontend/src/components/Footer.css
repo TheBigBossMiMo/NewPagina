@@ -1,9 +1,73 @@
-.footer {
-  background-color: #111;
-  color: #888;
-  text-align: center;
-  padding: 1.5rem;
+/* Variables locales y estructura principal */
+.footer-container {
+  --ft-bg: #111827; 
+  --ft-text: #9ca3af;
+  --ft-border: #1f2937;
+  --ft-link-hover: #3b82f6;
+
+  background-color: var(--ft-bg);
+  color: var(--ft-text);
+  padding: 1.5rem 2rem;
   margin-top: auto;
-  font-size: 0.9rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--ft-border);
+  font-family: system-ui, -apple-system, sans-serif;
+  display: flex;
+  justify-content: center;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px; /* Centra y limita el ancho en monitores grandes */
+}
+
+/* Sección de marca y copyright */
+.footer-brand p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #e5e7eb;
+}
+
+.footer-subtitle {
+  font-size: 0.8rem;
+  margin-top: 4px !important;
+  opacity: 0.7;
+}
+
+/* Enlaces del footer */
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-links a {
+  color: var(--ft-text);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: var(--ft-link-hover);
+}
+
+/* --- RESPONSIVO --- */
+@media (max-width: 600px) {
+  .footer-container {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer-content {
+    flex-direction: column-reverse; /* Pone los links arriba y el copyright abajo en móvil */
+    gap: 1.2rem;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
 }
