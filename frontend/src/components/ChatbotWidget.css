@@ -1,0 +1,213 @@
+.chatbot-container {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 9999;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Botón flotante */
+.chatbot-toggle {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 50px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.chatbot-toggle:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.6);
+}
+
+.chatbot-toggle.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+/* Ventana principal */
+.chatbot-window {
+  width: 350px;
+  height: 500px;
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  
+  /* Animación de entrada */
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.chatbot-window.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: all;
+}
+
+/* Cabecera del chat */
+.chatbot-header {
+  background-color: #002244;
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.chatbot-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bot-avatar {
+  font-size: 24px;
+}
+
+.chatbot-title h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.online-status {
+  font-size: 12px;
+  color: #4ade80;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #adb5bd;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: white;
+}
+
+/* Área de mensajes */
+.chatbot-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: #1e1e1e;
+}
+
+/* Scrollbar personalizado */
+.chatbot-messages::-webkit-scrollbar {
+  width: 6px;
+}
+.chatbot-messages::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 10px;
+}
+
+/* Burbujas de mensaje */
+.message-wrapper {
+  display: flex;
+  width: 100%;
+}
+
+.message-wrapper.user {
+  justify-content: flex-end;
+}
+
+.message-wrapper.bot {
+  justify-content: flex-start;
+}
+
+.message-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.bot .message-bubble {
+  background-color: #333;
+  color: #e0e0e0;
+  border-bottom-left-radius: 4px;
+}
+
+.user .message-bubble {
+  background-color: var(--primary-color);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+/* Animación de escribiendo */
+.typing-indicator span {
+  font-size: 18px;
+  animation: blink 1.4s infinite both;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+  0% { opacity: 0.2; }
+  20% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+/* Input y botón enviar */
+.chatbot-input {
+  display: flex;
+  padding: 10px;
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--border-color);
+}
+
+.chatbot-input input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--input-bg);
+  color: white;
+  border-radius: 20px;
+  outline: none;
+}
+
+.chatbot-input input:focus {
+  border-color: var(--primary-color);
+}
+
+.chatbot-input button {
+  margin-left: 10px;
+  padding: 10px 18px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.chatbot-input button:disabled {
+  background-color: #444;
+  color: #888;
+  cursor: not-allowed;
+}
