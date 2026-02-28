@@ -1,0 +1,101 @@
+.admin-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-badge {
+  background-color: var(--danger-color);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-card {
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.dashboard-card h3 {
+  margin-top: 0;
+  color: #66b0ff;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.estado-texto {
+  font-size: 1.2rem;
+}
+.estado-texto.fase-0 { color: var(--success-color); }
+.estado-texto.fase-1 { color: #fd7e14; } /* Naranja */
+.estado-texto.fase-2 { color: var(--danger-color); }
+
+.btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-control {
+  flex: 1;
+  padding: 10px 15px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  background-color: var(--input-bg);
+  color: var(--text-color);
+  transition: all 0.2s;
+}
+
+.btn-normal.active { background-color: var(--success-color); border-color: #1e7e34; }
+.btn-fase1.active { background-color: #fd7e14; border-color: #d39e00; }
+.btn-fase2.active { background-color: var(--danger-color); border-color: #bd2130; }
+
+.btn-control:hover:not(.active) {
+  border-color: #888;
+}
+
+.stats-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.stats-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.stats-list li:last-child {
+  border-bottom: none;
+}
