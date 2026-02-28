@@ -1,0 +1,85 @@
+.profile-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.profile-avatar {
+  font-size: 4rem;
+  background-color: var(--card-bg);
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  border: 2px solid var(--primary-color);
+}
+
+.profile-card {
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+/* Reutilizamos el estilo de .form-group que ya tienes globalmente o en otros archivos, 
+   pero le damos un toque específico si está deshabilitado */
+.profile-form input:disabled {
+  background-color: #222;
+  color: #888;
+  border-color: #333;
+  cursor: not-allowed;
+}
+
+.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: normal;
+  color: #ccc;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: inherit;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 1rem;
+}
+
+.profile-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.2s;
+}
+
+.profile-actions button:hover {
+  opacity: 0.9;
+}
+
+.btn-edit { background-color: var(--primary-color); color: white; }
+.btn-save { background-color: var(--success-color); color: white; }
+.btn-cancel { background-color: #555; color: white; }

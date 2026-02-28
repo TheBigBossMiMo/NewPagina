@@ -6,6 +6,7 @@ import VehicleRegistration from './components/VehicleRegistration';
 import Login from './components/Login';
 import ChatbotWidget from './components/ChatbotWidget';
 import AdminPanel from './pages/AdminPanel';
+import Profile from './pages/Profile';
 import './App.css';
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/registro" element={<VehicleRegistration />} />
+            <Route path="/perfil" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminPanel />} />
           </Routes>

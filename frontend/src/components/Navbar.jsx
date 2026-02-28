@@ -15,6 +15,9 @@ const Navbar = () => {
           <Link to="/registro">Mis Vehículos</Link>
         </li>
         <li>
+          <Link to="/perfil">Mi Perfil</Link>
+        </li>
+        <li>
           <Link to="/login" className="login-btn">
             Login
           </Link>
