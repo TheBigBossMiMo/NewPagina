@@ -84,7 +84,7 @@ const AdminPanel = () => {
               <strong>3,890</strong>
             </li>
             <li>
-              <span>🔍 Consultas Hoy</span> 
+              <span>🔍 Consultas de Hoy</span>
               <strong>450</strong>
             </li>
             <li>
