@@ -7,6 +7,7 @@ import Login from './components/Login';
 import ChatbotWidget from './components/ChatbotWidget';
 import AdminPanel from './pages/AdminPanel';
 import Profile from './pages/Profile';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/perfil" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
           </Routes>
         </main>
 

@@ -7,3 +7,6 @@ frontend/node_modules/
 .env
 backend/.env
 frontend/.env
+
+# Ignorar IntelliJ
+.idea/

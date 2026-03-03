@@ -1,0 +1,67 @@
+/* Contenedor principal */
+.privacy-container {
+  max-width: 900px;
+  margin: 60px auto;
+  padding: 40px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  line-height: 1.7;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Título principal */
+.privacy-container h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+  color: #1e293b;
+  text-align: center;
+}
+
+/* Subtítulo fecha */
+.privacy-container p strong {
+  color: #334155;
+}
+
+/* Subtítulos */
+.privacy-container h2 {
+  margin-top: 35px;
+  margin-bottom: 15px;
+  font-size: 22px;
+  color: #2563eb;
+  border-left: 4px solid #2563eb;
+  padding-left: 10px;
+}
+
+/* Párrafos */
+.privacy-container p {
+  margin-bottom: 15px;
+  color: #374151;
+}
+
+/* Listas */
+.privacy-container ul {
+  margin-left: 20px;
+  margin-bottom: 15px;
+}
+
+.privacy-container li {
+  margin-bottom: 8px;
+  color: #4b5563;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .privacy-container {
+    margin: 20px;
+    padding: 25px;
+  }
+
+  .privacy-container h1 {
+    font-size: 26px;
+  }
+
+  .privacy-container h2 {
+    font-size: 18px;
+  }
+}
