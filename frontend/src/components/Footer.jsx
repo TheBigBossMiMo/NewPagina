@@ -20,7 +20,7 @@ const Footer = () => {
         {/* Enlaces Rápidos */}
         <nav className="footer-links" aria-label="Enlaces del pie de página">
           <Link to="/privacy">Aviso de Privacidad</Link>
-          <a href="#terminos">Términos de Uso</a>
+          <<Link to="/terms">Términos de Uso</Link>
           <a href="#contacto">Soporte</a>
         </nav>
 
