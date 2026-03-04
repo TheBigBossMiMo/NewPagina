@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -11,32 +11,45 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfUse from './pages/TermsOfUse';
 import Contact from "./pages/Contact";
 
+function AppContent() {
+  const location = useLocation();
+
+  // ✅ "Adentro" = hay sesión (token)
+  const hasSession = !!localStorage.getItem('token');
+
+  // ✅ Mostrar asistente solo si estás logueado y NO estás en /login
+  const showChatbot = hasSession && !location.pathname.startsWith('/login');
+
+  return (
+    <div className="app-layout">
+      <Navbar />
+
+      {/* El main-content empuja al Footer hacia abajo gracias a flex: 1 */}
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/registro" element={<VehicleRegistration />} />
+          <Route path="/perfil" element={<Profile />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfUse />} />
+          <Route path="/contacto" element={<Contact />} />
+        </Routes>
+      </main>
+
+      {/* ✅ Chatbot SOLO "adentro" (con sesión) */}
+      {showChatbot && <ChatbotWidget />}
+
+      <Footer />
+    </div>
+  );
+}
+
 function App() {
   return (
     <Router>
-      <div className="app-layout">
-        <Navbar />
-        
-        {/* El main-content empuja al Footer hacia abajo gracias a flex: 1 */}
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/registro" element={<VehicleRegistration />} />
-            <Route path="/perfil" element={<Profile />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<AdminPanel />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfUse />} />
-            <Route path="/contacto" element={<Contact />} />
-
-
-
-          </Routes>
-        </main>
-
-        <ChatbotWidget />
-        <Footer />
-      </div>
+      <AppContent />
     </Router>
   );
 }
