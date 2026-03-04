@@ -10,12 +10,33 @@
   --cb-user-text: #ffffff;
   --cb-border: #e5e7eb;
   --cb-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  
+
+  /* ✅ NUEVO: espacio seguro para no tapar el footer */
+  --cb-footer-safe: 110px;
+
   position: fixed;
-  bottom: 30px;
+
+  /* ✅ CAMBIO: limita cuánto puede subir (evita que se vaya muy arriba en pantallas pequeñas) */
+  bottom: clamp(80px, var(--cb-footer-safe), 120px);
+
   right: 30px;
   z-index: 9999;
   font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ✅ CAMBIO: en pantallas medianas/chicas NO lo subas tanto */
+@media (max-width: 900px) {
+  .chatbot-container {
+    --cb-footer-safe: 110px; /* ✅ antes 140px */
+    right: 16px;
+  }
+}
+
+/* ✅ CAMBIO: evita que se dispare hacia arriba por altura baja */
+@media (max-height: 700px) {
+  .chatbot-container {
+    --cb-footer-safe: 110px; /* ✅ antes 150px */
+  }
 }
 
 /* Botón flotante */
@@ -59,7 +80,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--cb-border);
-  
+
   /* Animación de entrada */
   position: absolute;
   bottom: 0;
@@ -276,7 +297,8 @@
 /* --- ESTILOS RESPONSIVOS --- */
 @media (max-width: 480px) {
   .chatbot-container {
-    bottom: 20px;
+    /* ✅ antes: bottom: 20px; right: 20px; */
+    --cb-footer-safe: 120px; /* ✅ antes 140px */
     right: 20px;
   }
 
@@ -293,4 +315,18 @@
   .chatbot-window.active {
     transform: translateY(0) scale(1);
   }
+
+  .message-bubble{
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .bot-options{
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
 }
