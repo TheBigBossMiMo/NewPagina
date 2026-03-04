@@ -4,7 +4,7 @@ import './Login.css';
 
 const USERS_KEY = 'mock_users';     // lista de usuarios registrados
 const SESSION_KEY = 'token';        // sesión actual
-
+////
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '' });
