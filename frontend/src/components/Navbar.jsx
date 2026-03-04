@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Navbar.css';
+import logo from '../assets/logo.png';
 
 const Navbar = () => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -70,7 +71,9 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">Hoy No Circula</Link>
+        <Link to="/">
+          <img src={logo} alt="Logo Hoy No Circula" className="navbar-logo" />
+        </Link>
       </div>
 
       {/* Botón Hamburguesa para móviles */}
