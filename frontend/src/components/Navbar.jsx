@@ -8,13 +8,13 @@ const Navbar = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // ✅ NUEVO: estado de sesión
+  // ✅ estado de sesión
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ✅ NUEVO: función para refrescar estado de auth
+  // ✅ refrescar estado de auth
   const refreshAuth = () => {
     const token = localStorage.getItem('token');
     setIsLoggedIn(!!token);
@@ -24,12 +24,12 @@ const Navbar = () => {
     setIsMenuOpen(false);
   }, [location]);
 
-  // ✅ NUEVO: checar auth al cargar y cuando cambie la ruta
+  // ✅ checar auth al cargar y cuando cambie la ruta
   useEffect(() => {
     refreshAuth();
   }, [location]);
 
-  // ✅ NUEVO: escuchar evento custom (por si lo disparas desde Login.jsx)
+  // ✅ escuchar evento custom
   useEffect(() => {
     const onAuthChanged = () => refreshAuth();
     window.addEventListener('auth-changed', onAuthChanged);
@@ -43,13 +43,18 @@ const Navbar = () => {
       setIsInstallable(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       setIsInstallable(false);
       setDeferredPrompt(null);
-    });
+    };
 
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -58,55 +63,114 @@ const Navbar = () => {
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') setIsInstallable(false);
     setDeferredPrompt(null);
+    setIsMenuOpen(false);
   };
 
-  // ✅ NUEVO: logout
+  // ✅ logout
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
     setIsMenuOpen(false);
-    navigate('/'); // ✅ en vez de /login
+    navigate('/');
   };
 
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/">
+        <Link to="/" className="navbar-brand-link">
           <img src={logo} alt="Logo Hoy No Circula" className="navbar-logo" />
         </Link>
       </div>
 
-      {/* Botón Hamburguesa para móviles */}
-      <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+      <button
+        className="mobile-menu-btn"
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        aria-label="Abrir menú"
+        type="button"
+      >
         {isMenuOpen ? '✖' : '☰'}
       </button>
 
       <ul className={`navbar-links ${isMenuOpen ? 'active' : ''}`}>
-        <li><Link to="/">Inicio</Link></li>
+        <li>
+          <Link
+            to="/"
+            className={`nav-link-pill ${location.pathname === '/' ? 'active-nav-link' : ''}`}
+          >
+            Inicio
+          </Link>
+        </li>
 
-        {/* ✅ SOLO si hay sesión */}
+        <li>
+          <Link
+            to="/informacion"
+            className={`nav-link-pill ${location.pathname === '/informacion' ? 'active-nav-link' : ''}`}
+          >
+            Información
+          </Link>
+        </li>
+
+        {!isLoggedIn && (
+          <>
+            <li>
+              <Link
+                to="/registrarse-usuario"
+                className={`nav-link-pill ${location.pathname === '/registrarse-usuario' ? 'active-nav-link' : ''}`}
+              >
+                Registrarse
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/login"
+                className={`login-btn ${location.pathname === '/login' ? 'active-login-btn' : ''}`}
+              >
+                Login
+              </Link>
+            </li>
+          </>
+        )}
+
         {isLoggedIn && (
           <>
-            <li><Link to="/registro">Mis Vehículos</Link></li>
-            <li><Link to="/admin" style={{ color: '#fd7e14' }}>Panel Admin</Link></li>
-            <li><Link to="/perfil">Mi Perfil</Link></li>
+            <li>
+              <Link
+                to="/registro"
+                className={`nav-link-pill ${location.pathname === '/registro' ? 'active-nav-link' : ''}`}
+              >
+                Mis Vehículos
+              </Link>
+            </li>
+
+            <li>
+              <Link
+                to="/perfil"
+                className={`nav-link-pill ${location.pathname === '/perfil' ? 'active-nav-link' : ''}`}
+              >
+                Mi Perfil
+              </Link>
+            </li>
+
+            <li>
+              <Link to="/admin" className="nav-link-pill admin-link">
+                Panel Admin
+              </Link>
+            </li>
           </>
         )}
 
         {isInstallable && (
           <li>
-            <button onClick={handleInstallClick} className="btn-descargar">
+            <button onClick={handleInstallClick} className="btn-descargar" type="button">
               ⬇️ App
             </button>
           </li>
         )}
 
-        {/* ✅ Si NO hay sesión: Login | Si SÍ: Salir */}
-        {!isLoggedIn ? (
-          <li><Link to="/login" className="login-btn">Login</Link></li>
-        ) : (
+        {isLoggedIn && (
           <li>
-            <button onClick={handleLogout} className="login-btn">
+            <button onClick={handleLogout} className="login-btn" type="button">
               Salir
             </button>
           </li>

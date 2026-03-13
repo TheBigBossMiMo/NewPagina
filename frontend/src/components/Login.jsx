@@ -1,17 +1,13 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 
-const USERS_KEY = 'mock_users';     // lista de usuarios registrados
-const SESSION_KEY = 'token';        // sesión actual
+const USERS_KEY = 'mock_users';
+const SESSION_KEY = 'token';
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ email: '', password: '' });
-
-  // ✅ Mensajitos (errores y confirmación)
-  const [msg, setMsg] = useState(null); // { type: 'err'|'ok', text: '' }
-  const [confirmRegister, setConfirmRegister] = useState(false);
+  const [msg, setMsg] = useState(null);
 
   const navigate = useNavigate();
 
@@ -26,10 +22,6 @@ const Login = () => {
     }
   };
 
-  const saveUsers = (users) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
-
   const setSession = () => {
     localStorage.setItem(SESSION_KEY, 'mock-token');
     window.dispatchEvent(new Event('auth-changed'));
@@ -37,21 +29,12 @@ const Login = () => {
 
   const clearUX = () => {
     setMsg(null);
-    setConfirmRegister(false);
   };
 
-  // Manejador centralizado para los inputs
   const handleChange = (e) => {
     clearUX();
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleToggle = () => {
-    clearUX();
-    setIsLogin(!isLogin);
-    // Limpiar la contraseña si el usuario cambia de vista
-    setFormData({ email: '', password: '' }); // ✅ limpia correo y contraseña
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
@@ -67,73 +50,30 @@ const Login = () => {
     }
 
     const users = getUsers();
-    const user = users.find(u => u.email === email);
+    const user = users.find((u) => u.email === email);
 
-    if (isLogin) {
-      // ✅ LOGIN
-      if (!user) {
-        // No registrado -> pregunta
-        setConfirmRegister(true);
-        setMsg({ type: 'err', text: 'Este correo no está registrado. ¿Quieres registrarte?' });
-        return;
-      }
-
-      if (user.password !== password) {
-        setMsg({ type: 'err', text: 'Contraseña incorrecta.' });
-        return;
-      }
-
-      // OK
-      setSession();
-      alert('Mock: Sesión Iniciada');
-      navigate('/'); // ✅ manda al inicio
+    if (!user) {
+      setMsg({ type: 'err', text: 'Este correo no está registrado.' });
       return;
     }
 
-    // ✅ REGISTRO
-    if (user) {
-      setMsg({ type: 'err', text: 'Ese correo ya está registrado. Inicia sesión.' });
-      setIsLogin(true);
+    if (user.password !== password) {
+      setMsg({ type: 'err', text: 'Contraseña incorrecta.' });
       return;
     }
 
-    const newUsers = [...users, { email, password }];
-    saveUsers(newUsers);
-
-    // ✅ IMPORTANTE: ya NO iniciamos sesión automático, NO token, NO navigate('/')
-    // Mostrar mensaje y mandar a la pestaña de login para que ingrese
-    alert('Correo registrado. Ahora inicia sesión.');
-    setIsLogin(true);
-    setFormData(prev => ({ ...prev, password: '' })); // limpia password
-
-    // Si quieres que también se quite el email (opcional), descomenta:
-    // setFormData({ email: '', password: '' });
-  };
-
-  const handleConfirmYes = () => {
-    // Cambiar a registrarse
-    setConfirmRegister(false);
-    setMsg(null);
-    setIsLogin(false);
-    // (Opcional) limpiar password para que el registro se vea más limpio
-    setFormData(prev => ({ ...prev, password: '' }));
-  };
-
-  const handleConfirmNo = () => {
-    setConfirmRegister(false);
-    setMsg(null);
+    setSession();
+    alert('Mock: Sesión iniciada');
+    navigate('/');
   };
 
   return (
     <div className="login-container">
-      <h2>{isLogin ? '¡Bienvenido de vuelta!' : 'Crea tu cuenta'}</h2>
+      <h2>¡Bienvenido de vuelta!</h2>
       <p className="login-subtitle">
-        {isLogin
-          ? 'Ingresa tus credenciales para acceder al sistema.'
-          : 'Regístrate para gestionar el estado de tus vehículos.'}
+        Ingresa tus credenciales para acceder al sistema.
       </p>
 
-      {/* ✅ Mensaje (error / info) */}
       {msg && (
         <div
           style={{
@@ -141,32 +81,26 @@ const Login = () => {
             padding: '10px 12px',
             borderRadius: '10px',
             border: '1px solid rgba(0,0,0,0.12)',
-            background: msg.type === 'err' ? 'rgba(239, 68, 68, 0.10)' : 'rgba(34,197,94,0.10)',
+            background: 'rgba(239, 68, 68, 0.10)',
             fontSize: '14px'
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '10px',
+              alignItems: 'center'
+            }}
+          >
             <span>{msg.text}</span>
-
-            {/* ✅ Si es confirmación, mostramos botones Sí/No */}
-            {confirmRegister ? (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button type="button" onClick={handleConfirmYes} style={{ padding: '6px 10px', borderRadius: '8px' }}>
-                  Sí
-                </button>
-                <button type="button" onClick={handleConfirmNo} style={{ padding: '6px 10px', borderRadius: '8px' }}>
-                  No
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setMsg(null)}
-                style={{ padding: '6px 10px', borderRadius: '8px' }}
-              >
-                X
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setMsg(null)}
+              style={{ padding: '6px 10px', borderRadius: '8px' }}
+            >
+              X
+            </button>
           </div>
         </div>
       )}
@@ -197,20 +131,15 @@ const Login = () => {
             onChange={handleChange}
             required
             minLength={6}
-            autoComplete={isLogin ? "current-password" : "new-password"}
+            autoComplete="current-password"
           />
         </div>
 
-        <button type="submit">
-          {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
-        </button>
+        <button type="submit">Iniciar Sesión</button>
       </form>
 
       <p className="toggle-text">
-        {isLogin ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}
-        <span onClick={handleToggle} role="button" tabIndex={0}>
-          {isLogin ? 'Regístrate aquí' : 'Inicia sesión'}
-        </span>
+        ¿No tienes cuenta? <Link to="/registrarse-usuario">Regístrate aquí</Link>
       </p>
     </div>
   );

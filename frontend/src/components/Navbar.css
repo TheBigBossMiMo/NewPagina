@@ -2,126 +2,219 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #002244; /* Azul más oscuro y profesional */
-  padding: 1rem 2rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  background: linear-gradient(90deg, #001a33 0%, #002244 55%, #00305c 100%);
+  padding: 0.9rem 2rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
 }
 
-/*.navbar-brand a {
-  color: white;
-  font-size: 1.5rem;
-  font-weight: bold;
+.navbar-brand {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-brand a {
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
-}*/
+}
 
 .navbar-logo {
   height: 100px;
   width: auto;
   display: block;
+  filter: brightness(1.8) drop-shadow(0 0 1px rgba(255, 255, 255, 0.2));
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.navbar-brand a:hover .navbar-logo {
+  transform: scale(1.03);
+  filter: brightness(1.9) drop-shadow(0 0 2px rgba(255, 255, 255, 0.22));
 }
 
 .navbar-links {
   list-style: none;
   display: flex;
-  gap: 1.5rem;
+  gap: 0.65rem;
   align-items: center;
   margin: 0;
   padding: 0;
 }
 
+.navbar-links li {
+  display: flex;
+  align-items: center;
+}
+
 .navbar-links a {
-  color: #adb5bd;
+  color: #d6dde5;
   text-decoration: none;
-  font-weight: 500;
-  transition: color 0.3s ease;
+  font-weight: 600;
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  position: relative;
 }
 
 .navbar-links a:hover {
-  color: white;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.navbar-links a:active {
+  transform: scale(0.97);
 }
 
 .login-btn {
-  background-color: var(--success-color);
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  color: white !important;
-  font-weight: bold;
-  transition: background-color 0.2s;
+  color: #d6dde5 !important;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.55rem 0.95rem;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  box-shadow: none;
 }
 
 .login-btn:hover {
-  background-color: #218838;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
 }
 
 .btn-descargar {
-  background-color: #ffc107; /* Amarillo llamativo */
+  background: linear-gradient(135deg, #ffd54f 0%, #ffc107 100%);
   color: #000;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: bold;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.25s ease;
 }
 
 .btn-descargar:hover {
   background-color: #e0a800;
-  transform: scale(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(255, 193, 7, 0.28);
 }
 
 /* --- ESTILOS RESPONSIVOS NAVBAR --- */
 .mobile-menu-btn {
   display: none;
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: white;
   font-size: 1.8rem;
   cursor: pointer;
-  padding: 0;
+  padding: 0.35rem 0.8rem;
+  border-radius: 10px;
+  transition: all 0.25s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 @media (max-width: 850px) {
+  .navbar {
+    position: relative;
+    padding: 0.8rem 1rem;
+    z-index: 1000;
+  }
+
+  .navbar-logo {
+    height: 82px;
+    width: auto;
+    display: block;
+    filter: brightness(1.8) drop-shadow(0 0 1px rgba(255, 255, 255, 0.2));
+  }
+
   .mobile-menu-btn {
-    display: block; /* Mostramos la hamburguesa */
+    display: block;
   }
 
   .navbar-links {
     position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background-color: #002244;
+    top: calc(100% + 8px);
+    right: 0.8rem;
+    left: auto;
+    width: min(300px, 88vw);
+    background: rgba(255, 255, 255, 0.98);
     flex-direction: column;
-    padding: 1rem 0;
-    gap: 1rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    
-    /* Animación de entrada */
-    transform: translateY(-150%);
+    align-items: stretch;
+    padding: 0.8rem;
+    gap: 0.45rem;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+    border-radius: 18px;
+    border: 1px solid #e2e8f0;
+    transform: translateY(-14px);
     opacity: 0;
-    transition: all 0.3s ease-in-out;
-    z-index: -1; 
-  }
-
-  .navbar {
-    position: relative; /* Para que el menú absoluto se guíe de aquí */
-    z-index: 1000;
+    visibility: hidden;
+    transition: all 0.28s ease-in-out;
+    z-index: -1;
   }
 
   .navbar-links.active {
     transform: translateY(0);
     opacity: 1;
+    visibility: visible;
     z-index: 999;
   }
 
   .navbar-links li {
     width: 100%;
-    text-align: center;
+    text-align: left;
   }
 
-  .login-btn, .btn-descargar {
-    display: inline-block;
-    width: 80%;
-    margin: 0 auto;
+  .navbar-links a,
+  .login-btn,
+  .btn-descargar {
+    width: 100%;
+    box-sizing: border-box;
+    display: block;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    text-align: left;
+  }
+
+  .navbar-links a {
+    color: #0f172a;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .navbar-links a:hover {
+    color: #1d4ed8;
+    background: #f1f7ff;
+    transform: translateX(2px);
+    box-shadow: none;
+  }
+
+  .login-btn {
+    color: #0f172a !important;
+    text-align: left;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .login-btn:hover {
+    color: #1d4ed8 !important;
+    background: #f1f7ff;
+    transform: translateX(2px);
+    box-shadow: none;
+  }
+
+  .btn-descargar {
+    text-align: center;
   }
 }

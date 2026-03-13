@@ -10,6 +10,8 @@ import Profile from './pages/Profile';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfUse from './pages/TermsOfUse';
 import Contact from "./pages/Contact";
+import Informacion from './pages/Informacion';
+import RegistrarseUsuario from './components/RegistrarseUsuario';
 
 function AppContent() {
   const location = useLocation();
@@ -35,6 +37,8 @@ function AppContent() {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfUse />} />
           <Route path="/contacto" element={<Contact />} />
+          <Route path="/informacion" element={<Informacion />} />
+          <Route path="/registrarse-usuario" element={<RegistrarseUsuario />} />
         </Routes>
       </main>
 
