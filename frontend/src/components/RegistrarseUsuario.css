@@ -179,6 +179,7 @@
   justify-content: space-between;
   gap: 0.9rem;
   font-size: 0.95rem;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
 }
 
 .register-alert.error {
@@ -237,8 +238,22 @@
   color: #2563eb;
 }
 
+.google-login-box {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.google-login-helper {
+  margin: 0.7rem 0 0;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
 .register-divider {
-  margin: 1.2rem 0 1rem;
+  margin: 1.35rem 0 1.15rem;
   display: flex;
   align-items: center;
   gap: 0.8rem;
@@ -406,12 +421,13 @@
   display: flex;
   align-items: flex-start;
   gap: 0.7rem;
-  padding: 0.95rem 1rem;
+  padding: 1rem 1rem;
   border-radius: 16px;
   border: 1px solid #dbe3ee;
   background: #f8fbff;
   font-size: 0.94rem;
   color: #334155;
+  margin-top: 0.2rem;
 }
 
 .check-card input {
@@ -437,11 +453,11 @@
 
 .field-error.block {
   display: block;
-  margin-top: -0.45rem;
+  margin-top: -0.15rem;
 }
 
 .submit-btn {
-  margin-top: 0.3rem;
+  margin-top: 0.45rem;
   border: none;
   border-radius: 16px;
   background: linear-gradient(135deg, #001a33 0%, #002244 55%, #2563eb 100%);
@@ -460,11 +476,13 @@
 }
 
 .submit-btn:disabled {
-  opacity: 0.55;
+  opacity: 0.72;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-  filter: grayscale(0.15);
+  filter: grayscale(0.05);
+  background: linear-gradient(135deg, #8b97a8 0%, #91a3c7 100%);
+  color: #f8fafc;
 }
 
 .submit-btn:disabled:hover {
@@ -480,7 +498,7 @@
 
 .toggle-text a {
   color: #1d4ed8;
-  font-weight: 700;
+  font-weight: 800;
   text-decoration: none;
 }
 
@@ -599,10 +617,11 @@
 .captcha-box {
   display: flex;
   justify-content: center;
-  padding: 10px;
+  padding: 14px 10px;
   background: #f8fbff;
   border-radius: 14px;
   border: 1px solid #d6dee8;
+  margin-top: 0.15rem;
 }
 
 @media (max-width: 980px) {
