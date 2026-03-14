@@ -6,7 +6,10 @@ import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 
 const RECAPTCHA_SITE_KEY = '6LdgD4gsAAAAALf7kD2DgFo4veYQ9sndxWxh3Y1B';
-const API_URL = 'http://localhost:3000/api/auth';
+/*const API_URL = 'http://localhost:3000/api/auth';*/
+/*const API_URL = 'https://hoynocircula-backend.onrender.com/api/auth';*/
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 const initialForm = {
   fullName: '',
