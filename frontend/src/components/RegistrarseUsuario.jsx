@@ -5,8 +5,8 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 
-const USERS_KEY = 'mock_users';
 const RECAPTCHA_SITE_KEY = '6LdgD4gsAAAAALf7kD2DgFo4veYQ9sndxWxh3Y1B';
+const API_URL = 'http://localhost:3000/api/auth';
 
 const initialForm = {
   fullName: '',
@@ -43,19 +43,6 @@ const RegistrarseUsuario = () => {
 
   const normalizeEmail = (email) => (email || '').trim().toLowerCase();
   const normalizePhone = (phone) => (phone || '').replace(/\D/g, '');
-
-  const getUsers = () => {
-    try {
-      const raw = localStorage.getItem(USERS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveUsers = (users) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
 
   const clearUX = () => {
     setMsg(null);
@@ -318,20 +305,88 @@ const RegistrarseUsuario = () => {
     }
   };
 
-  const openOtpFlow = (userData) => {
-    const otp = generateOtp();
+  const openOtpFlow = async (userData) => {
+    try {
+      const response = await fetch(`${API_URL}/send-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: userData.email
+        })
+      });
 
-    setPendingUser(userData);
-    setGeneratedOtp(otp);
-    setOtpDigits(['', '', '', '', '', '']);
-    setOtpExpiresIn(300);
-    setResendIn(60);
-    setShowOtpModal(true);
+      const data = await response.json();
 
-    setMsg({
-      type: 'ok',
-      text: `Código enviado correctamente. Código demo actual: ${otp}`
-    });
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'No se pudo enviar el código');
+      }
+
+      setPendingUser(userData);
+      setGeneratedOtp('');
+      setOtpDigits(['', '', '', '', '', '']);
+      setOtpExpiresIn(300);
+      setResendIn(60);
+      setShowOtpModal(true);
+
+      setMsg({
+        type: 'ok',
+        text: 'Se envió un código de verificación a tu correo.'
+      });
+    } catch (error) {
+      console.error('Error enviando OTP:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'No se pudo enviar el correo de verificación.'
+      });
+    }
+  };
+
+  const handleGoogleRegister = async (credentialResponse) => {
+    try {
+      clearUX();
+
+      const decoded = jwtDecode(credentialResponse.credential);
+      const email = normalizeEmail(decoded.email);
+
+      const response = await fetch(`${API_URL}/google-register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fullName: decoded.name || '',
+          email,
+          phone: '',
+          password: '',
+          verified: true,
+          provider: 'google',
+          picture: decoded.picture || ''
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'No se pudo completar el registro con Google.');
+      }
+
+      setMsg({
+        type: 'ok',
+        text: 'Cuenta registrada con Google correctamente. Ahora ya puedes iniciar sesión.'
+      });
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 1400);
+    } catch (error) {
+      console.error('Error al procesar registro con Google:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'No se pudo completar el registro con Google.'
+      });
+    }
   };
 
   const handleSubmit = (e) => {
@@ -354,14 +409,6 @@ const RegistrarseUsuario = () => {
 
     const email = normalizeEmail(formData.email);
     const phone = normalizePhone(formData.phone);
-    const users = getUsers();
-
-    const userExists = users.find((u) => u.email === email);
-
-    if (userExists) {
-      setMsg({ type: 'err', text: 'Ese correo ya está registrado. Inicia sesión.' });
-      return;
-    }
 
     const userDraft = {
       fullName: formData.fullName.trim(),
@@ -375,9 +422,9 @@ const RegistrarseUsuario = () => {
 
     setSaving(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setSaving(false);
-      openOtpFlow(userDraft);
+      await openOtpFlow(userDraft);
     }, 1000);
   };
 
@@ -408,7 +455,7 @@ const RegistrarseUsuario = () => {
     setPendingUser(null);
   };
 
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const enteredOtp = otpDigits.join('');
 
     if (otpExpiresIn <= 0) {
@@ -421,46 +468,85 @@ const RegistrarseUsuario = () => {
       return;
     }
 
-    if (enteredOtp !== generatedOtp) {
-      setMsg({ type: 'err', text: 'El código ingresado es incorrecto.' });
-      return;
+    try {
+      const response = await fetch(`${API_URL}/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: pendingUser?.email,
+          otp: enteredOtp,
+          fullName: pendingUser?.fullName,
+          phone: pendingUser?.phone,
+          password: pendingUser?.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'El código ingresado es incorrecto.');
+      }
+
+      setShowOtpModal(false);
+      setPendingUser(null);
+      setGeneratedOtp('');
+      setOtpDigits(['', '', '', '', '', '']);
+
+      resetCaptcha();
+      setErrors({});
+      setMsg({ type: 'ok', text: 'Cuenta creada y verificada correctamente. Ahora inicia sesión.' });
+      setFormData(initialForm);
+
+      setTimeout(() => {
+        navigate('/login');
+      }, 1200);
+    } catch (error) {
+      console.error('Error verificando OTP:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'No se pudo verificar el código.'
+      });
     }
-
-    const users = getUsers();
-    const sanitizedPendingUser = { ...pendingUser };
-    delete sanitizedPendingUser.captchaToken;
-
-    const newUsers = [...users, { ...sanitizedPendingUser, verified: true }];
-    saveUsers(newUsers);
-
-    setShowOtpModal(false);
-    setPendingUser(null);
-    setGeneratedOtp('');
-    setOtpDigits(['', '', '', '', '', '']);
-
-    resetCaptcha();
-    setErrors({});
-    setMsg({ type: 'ok', text: 'Cuenta creada y verificada correctamente. Ahora inicia sesión.' });
-    setFormData(initialForm);
-
-    setTimeout(() => {
-      navigate('/login');
-    }, 1200);
   };
 
-  const handleResendOtp = () => {
+  const handleResendOtp = async () => {
     if (resendIn > 0 || !pendingUser) return;
 
-    const newOtp = generateOtp();
-    setGeneratedOtp(newOtp);
-    setOtpDigits(['', '', '', '', '', '']);
-    setOtpExpiresIn(300);
-    setResendIn(60);
+    try {
+      const response = await fetch(`${API_URL}/send-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: pendingUser.email
+        })
+      });
 
-    setMsg({
-      type: 'ok',
-      text: `Se envió un nuevo código. Código demo actual: ${newOtp}`
-    });
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'No se pudo reenviar el código');
+      }
+
+      setGeneratedOtp(generateOtp());
+      setOtpDigits(['', '', '', '', '', '']);
+      setOtpExpiresIn(300);
+      setResendIn(60);
+
+      setMsg({
+        type: 'ok',
+        text: 'Se envió un nuevo código a tu correo.'
+      });
+    } catch (error) {
+      console.error('Error reenviando OTP:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'No se pudo reenviar el código.'
+      });
+    }
   };
 
   return (
@@ -505,8 +591,7 @@ const RegistrarseUsuario = () => {
           <div className="register-info-card">
             <h3>Acceso inteligente</h3>
             <p>
-              Próximamente podrás iniciar sesión también con Google para agilizar tu acceso
-              y completar tu perfil automáticamente.
+              También puedes registrarte con Google para agilizar tu acceso y completar tu perfil automáticamente.
             </p>
           </div>
         </section>
@@ -526,47 +611,27 @@ const RegistrarseUsuario = () => {
             </div>
           )}
 
-<div style={{ marginTop: "1rem", display: "flex", justifyContent: "center" }}>
-  <GoogleLogin
-    theme="outline"
-    size="large"
-    text="continue_with"
-    shape="pill"
-    onSuccess={(credentialResponse) => {
+          <div className="google-login-box">
+            <GoogleLogin
+              theme="outline"
+              size="large"
+              text="continue_with"
+              shape="pill"
+              width="300"
+              onSuccess={handleGoogleRegister}
+              onError={() => {
+                console.log("Error al iniciar sesión con Google");
+                setMsg({
+                  type: 'err',
+                  text: 'No se pudo iniciar sesión con Google.'
+                });
+              }}
+            />
+          </div>
 
-      const decoded = jwtDecode(credentialResponse.credential);
-
-      const googleUser = {
-        fullName: decoded.name,
-        email: decoded.email,
-        picture: decoded.picture,
-        provider: "google"
-      };
-
-      console.log("Usuario Google:", googleUser);
-
-      // Guardar usuario en localStorage (simulación de registro)
-      localStorage.setItem("google_user", JSON.stringify(googleUser));
-
-      setMsg({
-        type: "ok",
-        text: "Inicio de sesión con Google exitoso."
-      });
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1200);
-
-    }}
-    onError={() => {
-      console.log("Error al iniciar sesión con Google");
-      setMsg({
-        type: "err",
-        text: "No se pudo iniciar sesión con Google."
-      });
-    }}
-  />
-</div>
+          <p className="google-login-helper">
+            Usa tu cuenta de Google para registrarte más rápido.
+          </p>
 
           <div className="register-divider">
             <span>o regístrate con tu correo</span>
@@ -789,7 +854,7 @@ const RegistrarseUsuario = () => {
             </div>
 
             <p className="otp-demo-note">
-              Demo actual: usa el código mostrado en el mensaje superior.
+              Ingresa el código enviado a tu correo electrónico.
             </p>
           </div>
         </div>
