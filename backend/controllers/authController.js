@@ -175,5 +175,5 @@ exports.googleRegister = async (req, res) => {
         message: error.message || "Error enviando correo"
       });
     }
-
+/**/
 };
