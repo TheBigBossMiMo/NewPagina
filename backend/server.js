@@ -16,7 +16,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // Postman, navegador directo, etc.
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -26,8 +26,6 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
-
-app.options("*", cors());
 
 app.use(express.json());
 
@@ -49,7 +47,6 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 
-// HU-16 / Lógica base: Endpoint para evaluar si una placa circula
 app.get("/api/circula/:placa", (req, res) => {
   const { placa } = req.params;
   const ultimoDigito = parseInt(placa.slice(-1));
