@@ -1,5 +1,7 @@
-const transporter = require("../config/mailer");
 const User = require("../models/User");
+const { Resend } = require("resend");
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 let otpStore = {};
 
@@ -25,28 +27,39 @@ exports.sendOtp = async (req, res) => {
       expiresAt: Date.now() + OTP_EXPIRATION_MS
     };
 
-    await transporter.sendMail({
-      from: `"Hoy No Circula" <${process.env.EMAIL_USER}>`,
-      to: email,
+    const { data, error } = await resend.emails.send({
+      from: "Hoy No Circula <onboarding@resend.dev>",
+      to: [email],
       subject: "Código de verificación",
       html: `
-        <h2>Verificación de cuenta</h2>
-        <p>Tu código de verificación es:</p>
-        <h1>${otp}</h1>
-        <p>Este código expira en 5 minutos.</p>
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Verificación de cuenta</h2>
+          <p>Tu código de verificación es:</p>
+          <h1 style="letter-spacing: 4px;">${otp}</h1>
+          <p>Este código expira en 5 minutos.</p>
+        </div>
       `
     });
 
+    if (error) {
+      console.error("Error Resend:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Error enviando correo"
+      });
+    }
+
     return res.json({
       success: true,
-      message: "Código enviado al correo"
+      message: "Código enviado al correo",
+      data
     });
   } catch (error) {
     console.error("Error enviando OTP:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Error enviando correo"
+      message: error.message || "Error enviando correo"
     });
   }
 };
@@ -153,8 +166,6 @@ exports.googleRegister = async (req, res) => {
     user = new User({
       fullName: fullName || "",
       email,
-      phone: "",
-      password: "",
       verified: true,
       provider: "google",
       picture: picture || ""
@@ -168,12 +179,11 @@ exports.googleRegister = async (req, res) => {
       user
     });
   } catch (error) {
-      console.error("Error enviando OTP:", error);
+    console.error("Error registrando con Google:", error);
 
-      return res.status(500).json({
-        success: false,
-        message: error.message || "Error enviando correo"
-      });
-    }
-/**/
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al registrar con Google."
+    });
+  }
 };
