@@ -187,4 +187,3 @@ exports.googleRegister = async (req, res) => {
     });
   }
 };
-/**/
