@@ -24,6 +24,16 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
+    // ✅ Validar si el correo ya existe antes de enviar OTP
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta."
+      });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     otpStore[email] = {
@@ -101,28 +111,29 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
+    // ✅ Antes de crear, volver a validar que no exista ya
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      delete otpStore[email];
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta de google."
+      });
+    }
+
     delete otpStore[email];
 
-    let user = await User.findOne({ email });
+    const user = new User({
+      fullName: fullName || "",
+      email,
+      phone: phone || "",
+      password: password || "",
+      verified: true,
+      provider: "local"
+    });
 
-    if (!user) {
-      user = new User({
-        fullName: fullName || "",
-        email,
-        phone: phone || "",
-        password: password || "",
-        verified: true,
-        provider: "local"
-      });
-
-      await user.save();
-    } else {
-      user.verified = true;
-      if (fullName) user.fullName = fullName;
-      if (phone) user.phone = phone;
-      if (password) user.password = password;
-      await user.save();
-    }
+    await user.save();
 
     return res.json({
       success: true,
@@ -152,16 +163,16 @@ exports.googleRegister = async (req, res) => {
       });
     }
 
-    let user = await User.findOne({ email });
+    const existingUser = await User.findOne({ email });
 
-    if (user) {
+    if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta."
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta normal."
       });
     }
 
-    user = new User({
+    const user = new User({
       fullName: fullName || "",
       email,
       verified: true,
