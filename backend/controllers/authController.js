@@ -168,11 +168,12 @@ exports.googleRegister = async (req, res) => {
       user
     });
   } catch (error) {
-    console.error("Error registrando con Google:", error);
+      console.error("Error enviando OTP:", error);
 
-    return res.status(500).json({
-      success: false,
-      message: "Error del servidor al registrar con Google."
-    });
-  }
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Error enviando correo"
+      });
+    }
+
 };
