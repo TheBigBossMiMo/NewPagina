@@ -58,6 +58,7 @@ app.get("/api/circula/:placa", (req, res) => {
   const diaActual = new Date().getDay();
   let circula = true;
   let colorRestringido = "";
+/*hol*/
 
   if (diaActual === 1 && (ultimoDigito === 5 || ultimoDigito === 6)) {
     circula = false;
