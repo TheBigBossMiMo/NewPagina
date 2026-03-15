@@ -30,7 +30,7 @@ exports.sendOtp = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta."
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta normal."
       });
     }
 
@@ -118,7 +118,7 @@ exports.verifyOtp = async (req, res) => {
       delete otpStore[email];
       return res.status(400).json({
         success: false,
-        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta de google."
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta"
       });
     }
 
@@ -168,7 +168,7 @@ exports.googleRegister = async (req, res) => {
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta normal."
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta de google."
       });
     }
 
