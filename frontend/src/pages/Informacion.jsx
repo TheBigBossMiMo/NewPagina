@@ -36,32 +36,15 @@ const featureSlides = [
 ];
 
 const Informacion = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentFeature, setCurrentFeature] = useState(0);
 
   useEffect(() => {
-    const checkSession = () => {
-      const token = localStorage.getItem('token');
-      setIsLoggedIn(Boolean(token));
-    };
-
-    checkSession();
-    window.addEventListener('auth-changed', checkSession);
-
-    return () => {
-      window.removeEventListener('auth-changed', checkSession);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
     const timer = setInterval(() => {
       setCurrentFeature((prev) => (prev + 1) % featureSlides.length);
     }, 4500);
 
     return () => clearInterval(timer);
-  }, [isLoggedIn]);
+  }, []);
 
   const handlePrevFeature = () => {
     setCurrentFeature((prev) =>
@@ -117,61 +100,59 @@ const Informacion = () => {
         </article>
       </section>
 
-      {isLoggedIn && (
-        <section className="info-section info-features-carousel-section">
-          <div className="info-section-header">
-            <h2>¿Qué puedes hacer en el sistema?</h2>
-            <p>
-              Al iniciar sesión puedes visualizar de forma más clara las funciones
-              principales del portal mediante este carrusel informativo.
-            </p>
-          </div>
+      <section className="info-section info-features-carousel-section">
+        <div className="info-section-header">
+          <h2>¿Qué puedes hacer en el sistema?</h2>
+          <p>
+            Aquí puedes visualizar de forma más clara las funciones principales
+            del portal mediante este carrusel informativo.
+          </p>
+        </div>
 
-          <div className="info-feature-carousel-shell">
+        <div className="info-feature-carousel-shell">
+          <button
+            type="button"
+            className="info-feature-arrow"
+            onClick={handlePrevFeature}
+            aria-label="Ver función anterior"
+          >
+            ‹
+          </button>
+
+          <article className="info-feature-card">
+            <div className="info-feature-icon-circle">
+              {featureSlides[currentFeature].icon}
+            </div>
+
+            <div className="info-feature-content">
+              <span className="info-mini-badge">Funciones del sistema</span>
+              <h3>{featureSlides[currentFeature].title}</h3>
+              <p>{featureSlides[currentFeature].description}</p>
+            </div>
+          </article>
+
+          <button
+            type="button"
+            className="info-feature-arrow"
+            onClick={handleNextFeature}
+            aria-label="Ver siguiente función"
+          >
+            ›
+          </button>
+        </div>
+
+        <div className="info-feature-dots">
+          {featureSlides.map((item, index) => (
             <button
+              key={item.id}
               type="button"
-              className="info-feature-arrow"
-              onClick={handlePrevFeature}
-              aria-label="Ver función anterior"
-            >
-              ‹
-            </button>
-
-            <article className="info-feature-card">
-              <div className="info-feature-icon-circle">
-                {featureSlides[currentFeature].icon}
-              </div>
-
-              <div className="info-feature-content">
-                <span className="info-mini-badge">Funciones del sistema</span>
-                <h3>{featureSlides[currentFeature].title}</h3>
-                <p>{featureSlides[currentFeature].description}</p>
-              </div>
-            </article>
-
-            <button
-              type="button"
-              className="info-feature-arrow"
-              onClick={handleNextFeature}
-              aria-label="Ver siguiente función"
-            >
-              ›
-            </button>
-          </div>
-
-          <div className="info-feature-dots">
-            {featureSlides.map((item, index) => (
-              <button
-                key={item.id}
-                type="button"
-                className={`info-feature-dot ${index === currentFeature ? 'active' : ''}`}
-                onClick={() => setCurrentFeature(index)}
-                aria-label={`Ir a la función ${index + 1}`}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+              className={`info-feature-dot ${index === currentFeature ? 'active' : ''}`}
+              onClick={() => setCurrentFeature(index)}
+              aria-label={`Ir a la función ${index + 1}`}
+            />
+          ))}
+        </div>
+      </section>
 
       <section className="info-section">
         <div className="info-section-header">
