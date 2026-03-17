@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 
 const USERS_KEY = 'mock_users';
 const SESSION_KEY = 'token';
+const SESSION_USER_KEY = 'session_user';
+const GOOGLE_USER_KEY = 'google_user';
+const REMEMBER_ME_KEY = 'remember_me';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: false
+  });
   const [msg, setMsg] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const navigate = useNavigate();
 
@@ -22,8 +33,23 @@ const Login = () => {
     }
   };
 
-  const setSession = () => {
+  const saveUsers = (users) => {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  };
+
+  const getGoogleUser = () => {
+    try {
+      const raw = localStorage.getItem(GOOGLE_USER_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const setSession = (user, rememberMe = false) => {
     localStorage.setItem(SESSION_KEY, 'mock-token');
+    localStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
+    localStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
     window.dispatchEvent(new Event('auth-changed'));
   };
 
@@ -31,10 +57,41 @@ const Login = () => {
     setMsg(null);
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem(SESSION_KEY);
+
+    if (token) {
+      navigate('/');
+    }
+  }, [navigate]);
+
   const handleChange = (e) => {
     clearUX();
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const handleForgotPassword = () => {
+    clearUX();
+
+    const email = normalizeEmail(formData.email);
+
+    if (!email) {
+      setMsg({
+        type: 'warn',
+        text: 'Escribe primero tu correo para ayudarte a recuperar la contraseña.'
+      });
+      return;
+    }
+
+    setMsg({
+      type: 'ok',
+      text: `Demo: Se envió un enlace de recuperación a ${email}.`
+    });
   };
 
   const handleSubmit = (e) => {
@@ -57,15 +114,101 @@ const Login = () => {
       return;
     }
 
+    if (user.provider === 'google' && !user.password) {
+      setMsg({
+        type: 'warn',
+        text: 'Esta cuenta fue registrada con Google. Usa el botón de Google para iniciar sesión.'
+      });
+      return;
+    }
+
     if (user.password !== password) {
       setMsg({ type: 'err', text: 'Contraseña incorrecta.' });
       return;
     }
 
-    setSession();
-    alert('Mock: Sesión iniciada');
-    navigate('/');
+    setSaving(true);
+
+    setTimeout(() => {
+      setSession(user, formData.rememberMe);
+      setSaving(false);
+
+      setMsg({
+        type: 'ok',
+        text: `Bienvenido, ${user.fullName || user.email}.`
+      });
+
+      setTimeout(() => {
+        navigate('/');
+      }, 700);
+    }, 900);
   };
+
+  const handleGoogleSuccess = (credentialResponse) => {
+    try {
+      clearUX();
+
+      const decoded = jwtDecode(credentialResponse.credential);
+
+      const googleUser = {
+        fullName: decoded.name,
+        email: normalizeEmail(decoded.email),
+        picture: decoded.picture,
+        provider: 'google',
+        verified: true
+      };
+
+      const users = getUsers();
+      const existingUser = users.find((u) => u.email === googleUser.email);
+
+      let sessionUser = existingUser;
+
+      if (!existingUser) {
+        const newGoogleUser = {
+          fullName: googleUser.fullName,
+          email: googleUser.email,
+          picture: googleUser.picture,
+          provider: 'google',
+          verified: true
+        };
+
+        saveUsers([...users, newGoogleUser]);
+        sessionUser = newGoogleUser;
+      }
+
+      localStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(googleUser));
+      setSession(sessionUser || googleUser, true);
+
+      setMsg({
+        type: 'ok',
+        text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
+      });
+
+      setTimeout(() => {
+        navigate('/');
+      }, 800);
+    } catch (error) {
+      console.error('Error al procesar inicio con Google:', error);
+      setMsg({
+        type: 'err',
+        text: 'No se pudo iniciar sesión con Google.'
+      });
+    }
+  };
+
+  const handleGoogleError = () => {
+    setMsg({
+      type: 'err',
+      text: 'No se pudo iniciar sesión con Google.'
+    });
+  };
+
+  const alertClass =
+    msg?.type === 'err'
+      ? 'error'
+      : msg?.type === 'warn'
+      ? 'warning'
+      : 'success';
 
   return (
     <div className="login-container">
@@ -75,35 +218,30 @@ const Login = () => {
       </p>
 
       {msg && (
-        <div
-          style={{
-            marginBottom: '12px',
-            padding: '10px 12px',
-            borderRadius: '10px',
-            border: '1px solid rgba(0,0,0,0.12)',
-            background: 'rgba(239, 68, 68, 0.10)',
-            fontSize: '14px'
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: '10px',
-              alignItems: 'center'
-            }}
-          >
+        <div className={`login-alert ${alertClass}`}>
+          <div className="login-alert-content">
             <span>{msg.text}</span>
-            <button
-              type="button"
-              onClick={() => setMsg(null)}
-              style={{ padding: '6px 10px', borderRadius: '8px' }}
-            >
-              X
+            <button type="button" onClick={() => setMsg(null)}>
+              ×
             </button>
           </div>
         </div>
       )}
+
+      <div className="google-login-wrap">
+        <GoogleLogin
+          theme="outline"
+          size="large"
+          text="continue_with"
+          shape="pill"
+          onSuccess={handleGoogleSuccess}
+          onError={handleGoogleError}
+        />
+      </div>
+
+      <div className="login-divider">
+        <span>o inicia sesión con tu correo</span>
+      </div>
 
       <form onSubmit={handleSubmit} className="login-form">
         <div className="input-wrapper">
@@ -122,20 +260,51 @@ const Login = () => {
 
         <div className="input-wrapper">
           <label htmlFor="password">Contraseña</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            minLength={6}
-            autoComplete="current-password"
-          />
+          <div className="password-field">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              minLength={6}
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              className="toggle-password"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? 'Ocultar' : 'Ver'}
+            </button>
+          </div>
         </div>
 
-        <button type="submit">Iniciar Sesión</button>
+        <div className="login-row">
+          <label className="remember-check">
+            <input
+              type="checkbox"
+              name="rememberMe"
+              checked={formData.rememberMe}
+              onChange={handleChange}
+            />
+            <span>Mantener sesión iniciada</span>
+          </label>
+
+          <button
+            type="button"
+            className="forgot-link"
+            onClick={handleForgotPassword}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
+        </div>
+
+        <button type="submit" disabled={saving}>
+          {saving ? 'Ingresando...' : 'Iniciar Sesión'}
+        </button>
       </form>
 
       <p className="toggle-text">

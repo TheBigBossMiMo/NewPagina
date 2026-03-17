@@ -165,54 +165,6 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="features-section">
-        <div className="section-header">
-          <h2>¿Qué puedes hacer en el sistema?</h2>
-          <p>
-            Este portal fue diseñado para apoyar a los ciudadanos en la consulta
-            vehicular y el acceso a información relevante del programa.
-          </p>
-        </div>
-
-        <div className="features-grid improved-features-grid">
-          <article className="feature-card pro-card">
-            <div className="feature-icon-circle">🔎</div>
-            <h3>Consulta rápida</h3>
-            <p>
-              Verifica de forma inmediata el estatus de circulación de tu
-              vehículo con base en sus datos principales.
-            </p>
-          </article>
-
-          <article className="feature-card pro-card">
-            <div className="feature-icon-circle">ℹ️</div>
-            <h3>Información del programa</h3>
-            <p>
-              Conoce cómo funciona el programa Hoy No Circula, sus reglas
-              generales y su objetivo ambiental.
-            </p>
-          </article>
-
-          <article className="feature-card pro-card">
-            <div className="feature-icon-circle">👤</div>
-            <h3>Registro de usuario</h3>
-            <p>
-              Crea una cuenta para acceder a más servicios y administrar tu
-              información dentro del sistema.
-            </p>
-          </article>
-
-          <article className="feature-card pro-card">
-            <div className="feature-icon-circle">🔐</div>
-            <h3>Inicio de sesión</h3>
-            <p>
-              Accede al portal para consultar funciones avanzadas y dar
-              seguimiento a tu información.
-            </p>
-          </article>
-        </div>
-      </section>
-
       <section className="visitor-section">
         <div className="section-header">
           <h2>Funciones para usuario visitante</h2>
