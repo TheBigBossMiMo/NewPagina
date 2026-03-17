@@ -574,6 +574,18 @@ const VehicleRegistration = () => {
             )}
           </button>
 
+          <button type="submit" className="submit-btn" disabled={!isFormValid || saving}>
+                      {saving ? (
+                        <>
+                          <span className="spinner" /> Guardando...
+                        </>
+                      ) : (
+                        <>
+                          <span>💾</span> Guardar Vehículo
+                        </>
+                      )}
+                    </button>
+
           {savedOk && (
             <div className="saved-banner">
               ✅ Vehículo guardado. Ya quedó registrado en el sistema.
