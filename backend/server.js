@@ -4,6 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
+const Vehicle = require("./models/Vehicle");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,6 +56,10 @@ const normalizePlate = (value = "") => {
   return value.toUpperCase().replace(/\s+/g, "").trim();
 };
 
+const normalizeRawPlate = (value = "") => {
+  return normalizePlate(value).replace(/-/g, "");
+};
+
 const normalizeState = (value = "") => {
   const clean = value.toUpperCase().trim();
 
@@ -67,12 +72,13 @@ const normalizeState = (value = "") => {
 };
 
 const isValidPlateFormatByState = (plate, state) => {
-  const raw = plate.replace(/-/g, "");
+  const normalized = normalizePlate(plate);
+  const raw = normalized.replace(/-/g, "");
 
   if (state === "CDMX") {
     return (
-      /^[A-Z]{3}-\d{3}$/.test(plate) ||
-      /^\d{3}-[A-Z]{3}$/.test(plate) ||
+      /^[A-Z]{3}-\d{3}$/.test(normalized) ||
+      /^\d{3}-[A-Z]{3}$/.test(normalized) ||
       /^[A-Z]{3}\d{3}$/.test(raw) ||
       /^\d{3}[A-Z]{3}$/.test(raw)
     );
@@ -80,8 +86,8 @@ const isValidPlateFormatByState = (plate, state) => {
 
   if (state === "EDOMEX") {
     return (
-      /^[A-Z]{2}-\d{2}-[A-Z]{2}$/.test(plate) ||
-      /^\d{2}-[A-Z]{2}-\d{2}$/.test(plate) ||
+      /^[A-Z]{2}-\d{2}-[A-Z]{2}$/.test(normalized) ||
+      /^\d{2}-[A-Z]{2}-\d{2}$/.test(normalized) ||
       /^[A-Z]{2}\d{2}[A-Z]{2}$/.test(raw) ||
       /^\d{2}[A-Z]{2}\d{2}$/.test(raw)
     );
@@ -96,6 +102,10 @@ const getLastNumericDigit = (plate) => {
   return parseInt(digits[digits.length - 1], 10);
 };
 
+const getSaturdayNumberInMonth = (date) => {
+  return Math.ceil(date.getDate() / 7);
+};
+
 const evaluateCirculation = ({ plate, holograma }) => {
   const diaActual = new Date().getDay(); // 0=Dom, 1=Lun ... 6=Sab
   const ultimoDigito = getLastNumericDigit(plate);
@@ -107,53 +117,171 @@ const evaluateCirculation = ({ plate, holograma }) => {
     };
   }
 
-  // Regla simple mejorada:
-  // Holograma 00 y 0 pueden circular
-  if (holograma === "00" || holograma === "0") {
+  const dayRule = {
+    1: [5, 6], // Lunes
+    2: [7, 8], // Martes
+    3: [3, 4], // Miércoles
+    4: [1, 2], // Jueves
+    5: [9, 0]  // Viernes
+  };
+
+  if (diaActual === 0) {
     return {
       circula: true,
-      mensaje: "Hoy puedes circular sin problema."
+      mensaje: "Domingo: sin restricción del programa base."
     };
   }
 
-  let circula = true;
-  let colorRestringido = "";
+  if (diaActual === 6) {
+    if (holograma === "00" || holograma === "0") {
+      return {
+        circula: true,
+        mensaje: `Sábado: sin restricción para holograma ${holograma}.`
+      };
+    }
 
-  if (diaActual === 1 && (ultimoDigito === 5 || ultimoDigito === 6)) {
-    circula = false;
-    colorRestringido = "Amarillo";
+    if (holograma === "2") {
+      return {
+        circula: false,
+        mensaje: "Sábado: restricción sabatina para holograma 2."
+      };
+    }
+
+    if (holograma === "1") {
+      const nth = getSaturdayNumberInMonth(new Date());
+      const isOdd = [1, 3, 5, 7, 9].includes(ultimoDigito);
+      const isEven = [0, 2, 4, 6, 8].includes(ultimoDigito);
+
+      if (nth === 5) {
+        return {
+          circula: true,
+          mensaje: "Quinto sábado: sin restricción sabatina para holograma 1."
+        };
+      }
+
+      if ((nth === 1 || nth === 3) && isOdd) {
+        return {
+          circula: false,
+          mensaje: `Sábado #${nth}: restricción por terminación impar.`
+        };
+      }
+
+      if ((nth === 2 || nth === 4) && isEven) {
+        return {
+          circula: false,
+          mensaje: `Sábado #${nth}: restricción por terminación par.`
+        };
+      }
+
+      return {
+        circula: true,
+        mensaje: "Sábado: sin restricción adicional."
+      };
+    }
   }
 
-  if (diaActual === 2 && (ultimoDigito === 7 || ultimoDigito === 8)) {
-    circula = false;
-    colorRestringido = "Rosa";
+  if (holograma === "00" || holograma === "0") {
+    return {
+      circula: true,
+      mensaje: `Entre semana: sin restricción para holograma ${holograma}.`
+    };
   }
 
-  if (diaActual === 3 && (ultimoDigito === 3 || ultimoDigito === 4)) {
-    circula = false;
-    colorRestringido = "Rojo";
-  }
+  const restrictedDigits = dayRule[diaActual] || [];
+  const isRestrictedToday = restrictedDigits.includes(ultimoDigito);
 
-  if (diaActual === 4 && (ultimoDigito === 1 || ultimoDigito === 2)) {
-    circula = false;
-    colorRestringido = "Verde";
-  }
-
-  if (diaActual === 5 && (ultimoDigito === 9 || ultimoDigito === 0)) {
-    circula = false;
-    colorRestringido = "Azul";
+  if (isRestrictedToday) {
+    return {
+      circula: false,
+      mensaje: `Hoy NO circulas. Terminación restringida: ${restrictedDigits.join(" y ")}.`
+    };
   }
 
   return {
-    circula,
-    mensaje: circula
-      ? "Hoy puedes circular sin problema."
-      : `Hoy NO circulas. Engomado ${colorRestringido}.`
+    circula: true,
+    mensaje: "Hoy puedes circular sin problema."
   };
 };
 
 /* =========================
-   RUTA CORREGIDA
+   REGISTRAR VEHÍCULO
+========================= */
+
+app.post("/api/vehicles", async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const maxModelYear = currentYear + 2;
+
+    const entidad = normalizeState(req.body.entidad || "");
+    const placa = normalizePlate(req.body.placa || "");
+    const placaNormalizada = normalizeRawPlate(req.body.placa || "");
+    const modelo = Number(req.body.modelo);
+    const holograma = String(req.body.holograma || "").trim();
+
+    if (!entidad) {
+      return res.status(400).json({
+        message: "Selecciona una entidad válida."
+      });
+    }
+
+    if (!placa || !isValidPlateFormatByState(placa, entidad)) {
+      return res.status(400).json({
+        message:
+          entidad === "CDMX"
+            ? "La placa no coincide con un formato válido de CDMX."
+            : "La placa no coincide con un formato válido del Estado de México."
+      });
+    }
+
+    if (!Number.isFinite(modelo) || modelo < 1950 || modelo > maxModelYear) {
+      return res.status(400).json({
+        message: `El modelo debe estar entre 1950 y ${maxModelYear}.`
+      });
+    }
+
+    if (!["00", "0", "1", "2"].includes(holograma)) {
+      return res.status(400).json({
+        message: "Selecciona un holograma válido."
+      });
+    }
+
+    const existingVehicle = await Vehicle.findOne({
+      entidad,
+      placaNormalizada
+    });
+
+    if (existingVehicle) {
+      return res.status(409).json({
+        message: "Esta placa ya está registrada en esa entidad."
+      });
+    }
+
+    const vehicle = new Vehicle({
+      entidad,
+      placa,
+      placaNormalizada,
+      modelo,
+      holograma
+    });
+
+    await vehicle.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Vehículo registrado correctamente.",
+      vehicle
+    });
+  } catch (error) {
+    console.error("Error registrando vehículo:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al registrar el vehículo."
+    });
+  }
+});
+
+/* =========================
+   CONSULTAR CIRCULACIÓN
 ========================= */
 
 app.get("/api/circula/:placa", async (req, res) => {
@@ -184,27 +312,31 @@ app.get("/api/circula/:placa", async (req, res) => {
     }
 
     const placaSinGuiones = placaParam.replace(/-/g, "");
+    const placaNormalizada = normalizeRawPlate(placaParam);
 
-    const vehiclesCollection = mongoose.connection.collection("vehicles");
-
-    const vehicle = await vehiclesCollection.findOne({
-      $and: [
-        {
-          $or: [
-            { placa: placaParam },
-            { placa: placaSinGuiones },
-            { matricula: placaParam },
-            { matricula: placaSinGuiones }
-          ]
-        },
-        {
-          $or: [
-            { estado: estado },
-            { entidad: estado }
-          ]
-        }
-      ]
-    });
+    const vehicle =
+      await Vehicle.findOne({
+        entidad: estado,
+        placaNormalizada
+      }) ||
+      await Vehicle.findOne({
+        $and: [
+          {
+            $or: [
+              { placa: placaParam },
+              { placa: placaSinGuiones },
+              { matricula: placaParam },
+              { matricula: placaSinGuiones }
+            ]
+          },
+          {
+            $or: [
+              { estado: estado },
+              { entidad: estado }
+            ]
+          }
+        ]
+      });
 
     if (!vehicle) {
       return res.json({
@@ -218,14 +350,14 @@ app.get("/api/circula/:placa", async (req, res) => {
 
     const hologramaFinal = vehicle.holograma || holograma;
     const circulation = evaluateCirculation({
-      plate: placaParam,
+      plate: vehicle.placa || placaParam,
       holograma: hologramaFinal
     });
 
     return res.json({
       found: true,
-      placa: placaParam,
-      estado,
+      placa: vehicle.placa || placaParam,
+      estado: vehicle.entidad || vehicle.estado || estado,
       holograma: hologramaFinal,
       circula: circulation.circula,
       mensaje: circulation.mensaje
