@@ -1,13 +1,17 @@
 const User = require("../models/User");
-const { Resend } = require("resend");
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 
 let otpStore = {};
 
 const OTP_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutos
 
 const normalizeEmail = (email) => (email || "").trim().toLowerCase();
+
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications["api-key"];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 exports.sendOtp = async (req, res) => {
   try {
@@ -20,6 +24,16 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
+    // ✅ Validar si el correo ya existe antes de enviar OTP
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta normal."
+      });
+    }
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     otpStore[email] = {
@@ -27,11 +41,14 @@ exports.sendOtp = async (req, res) => {
       expiresAt: Date.now() + OTP_EXPIRATION_MS
     };
 
-    const { data, error } = await resend.emails.send({
-      from: "Hoy No Circula <onboarding@resend.dev>",
-      to: [email],
+    await tranEmailApi.sendTransacEmail({
+      sender: {
+        name: "Hoy No Circula",
+        email: "soporte.hoynocircula@gmail.com"
+      },
+      to: [{ email }],
       subject: "Código de verificación",
-      html: `
+      htmlContent: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
           <h2>Verificación de cuenta</h2>
           <p>Tu código de verificación es:</p>
@@ -41,25 +58,19 @@ exports.sendOtp = async (req, res) => {
       `
     });
 
-    if (error) {
-      console.error("Error Resend:", error);
-      return res.status(500).json({
-        success: false,
-        message: error.message || "Error enviando correo"
-      });
-    }
-
     return res.json({
       success: true,
-      message: "Código enviado al correo",
-      data
+      message: "Código enviado al correo"
     });
   } catch (error) {
     console.error("Error enviando OTP:", error);
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Error enviando correo"
+      message:
+        error?.response?.body?.message ||
+        error.message ||
+        "Error enviando correo"
     });
   }
 };
@@ -87,7 +98,6 @@ exports.verifyOtp = async (req, res) => {
 
     if (Date.now() > savedOtpData.expiresAt) {
       delete otpStore[email];
-
       return res.status(400).json({
         success: false,
         message: "El código ha expirado. Solicita uno nuevo."
@@ -101,30 +111,29 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
+    // ✅ Antes de crear, volver a validar que no exista ya
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      delete otpStore[email];
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta"
+      });
+    }
+
     delete otpStore[email];
 
-    let user = await User.findOne({ email });
+    const user = new User({
+      fullName: fullName || "",
+      email,
+      phone: phone || "",
+      password: password || "",
+      verified: true,
+      provider: "local"
+    });
 
-    if (!user) {
-      user = new User({
-        fullName: fullName || "",
-        email,
-        phone: phone || "",
-        password: password || "",
-        verified: true,
-        provider: "local"
-      });
-
-      await user.save();
-    } else {
-      user.verified = true;
-
-      if (fullName) user.fullName = fullName;
-      if (phone) user.phone = phone;
-      if (password) user.password = password;
-
-      await user.save();
-    }
+    await user.save();
 
     return res.json({
       success: true,
@@ -154,16 +163,16 @@ exports.googleRegister = async (req, res) => {
       });
     }
 
-    let user = await User.findOne({ email });
+    const existingUser = await User.findOne({ email });
 
-    if (user) {
+    if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta."
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta de google."
       });
     }
 
-    user = new User({
+    const user = new User({
       fullName: fullName || "",
       email,
       verified: true,
@@ -187,4 +196,3 @@ exports.googleRegister = async (req, res) => {
     });
   }
 };
-/**/
