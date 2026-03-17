@@ -117,12 +117,21 @@ const CirculationStatus = () => {
         return;
       }
 
+      const hologramaUsado = data.holograma || holograma;
+      const hologramaSobrescritoPorBD =
+        data.found === true &&
+        data.holograma &&
+        data.holograma !== holograma;
+
       setResult({
         type: data.circula ? 'circula' : 'no-circula',
         placa: data.placa,
         estado: data.estado || estado,
         message: data.mensaje,
-        holograma: data.holograma || holograma
+        holograma: hologramaUsado,
+        found: data.found,
+        fromDatabase: data.found === true,
+        hologramaSobrescritoPorBD
       });
     } catch (error) {
       console.error('Error consultando circulación:', error);
@@ -189,14 +198,58 @@ const CirculationStatus = () => {
       {result && result.type === 'circula' && (
         <div className="result-card circula">
           <h3>✅ ¡Hoy CIRCULAS!</h3>
+
+          {result.fromDatabase && (
+            <div className="result-badge result-badge-info">
+              Vehículo encontrado en base de datos
+            </div>
+          )}
+
           <p>{result.message}</p>
+
+          {result.fromDatabase && (
+            <div className="result-meta">
+              <p>
+                Se usó el holograma registrado en el sistema: <strong>{result.holograma}</strong>.
+              </p>
+
+              {result.hologramaSobrescritoPorBD && (
+                <p className="result-note">
+                  El holograma seleccionado en la consulta fue ignorado porque este vehículo ya
+                  cuenta con información registrada.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {result && result.type === 'no-circula' && (
         <div className="result-card no-circula">
           <h3>⛔ Hoy NO CIRCULAS</h3>
+
+          {result.fromDatabase && (
+            <div className="result-badge result-badge-info">
+              Vehículo encontrado en base de datos
+            </div>
+          )}
+
           <p>{result.message}</p>
+
+          {result.fromDatabase && (
+            <div className="result-meta">
+              <p>
+                Se usó el holograma registrado en el sistema: <strong>{result.holograma}</strong>.
+              </p>
+
+              {result.hologramaSobrescritoPorBD && (
+                <p className="result-note">
+                  El holograma seleccionado en la consulta fue ignorado porque este vehículo ya
+                  cuenta con información registrada.
+                </p>
+              )}
+            </div>
+          )}
         </div>
       )}
 
