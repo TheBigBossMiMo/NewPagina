@@ -154,7 +154,7 @@ const Navbar = () => {
 
             <li>
               <Link to="/admin" className="nav-link-pill admin-link">
-                Panel Admin
+                Contigencia
               </Link>
             </li>
           </>
