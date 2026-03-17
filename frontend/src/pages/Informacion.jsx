@@ -301,4 +301,3 @@ const Informacion = () => {
 };
 
 export default Informacion;
-/**/
