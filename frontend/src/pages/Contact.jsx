@@ -13,7 +13,6 @@ const Contact = () => {
 
     if (!form.current) return;
 
-    // Validación simple (evita enviar campos con puros espacios)
     const data = new FormData(form.current);
     const nombre = (data.get("nombre") || "").toString().trim();
     const correo = (data.get("correo") || "").toString().trim();
@@ -22,7 +21,10 @@ const Contact = () => {
     const mensaje = (data.get("mensaje") || "").toString().trim();
 
     if (!nombre || !correo || !rol || !asunto || !mensaje) {
-      setStatus({ type: "error", message: "Completa todos los campos (sin dejar espacios vacíos)." });
+      setStatus({
+        type: "error",
+        message: "Completa todos los campos sin dejar espacios vacíos.",
+      });
       return;
     }
 
@@ -31,68 +33,151 @@ const Contact = () => {
       setStatus({ type: "", message: "" });
 
       await emailjs.sendForm(
-        "service_hh4jmie",      // Service ID
-        "template_ahperpw",     // Template ID
+        "service_hh4jmie",
+        "template_ahperpw",
         form.current,
-        "9K36SMc1PKLEaR_Yk"     // Public Key
+        "9K36SMc1PKLEaR_Yk"
       );
 
-      setStatus({ type: "success", message: "Mensaje enviado correctamente 🚗✅" });
+      setStatus({
+        type: "success",
+        message: "Mensaje enviado correctamente 🚗✅",
+      });
+
       form.current.reset();
     } catch (error) {
       console.error("EmailJS error:", error);
-      setStatus({ type: "error", message: "Error al enviar ❌. Revisa consola o tu configuración de EmailJS." });
+      setStatus({
+        type: "error",
+        message: "Error al enviar ❌. Revisa la configuración de EmailJS.",
+      });
     } finally {
       setSending(false);
     }
   };
 
   return (
-    <div className="contact-container">
-      <div className="contact-card">
-        {/* Lado izquierdo */}
-        <div className="contact-info">
-          <h2>🚗 Hoy No Circula</h2>
+    <section className="contact-container">
+      <div className="contact-wrapper">
+        <div className="contact-header">
+          <span className="contact-badge">Centro de soporte</span>
+          <h1>¿Necesitas ayuda?</h1>
           <p>
-            ¿Tienes dudas sobre verificación, restricciones o tu registro?
-            Escríbenos y te respondemos lo antes posible.
+            Ponte en contacto con nosotros para resolver dudas sobre tu registro,
+            circulación, verificación vehicular o cualquier detalle del sistema.
           </p>
         </div>
 
-        {/* Form */}
-        <div className="contact-form">
-          <h3>Formulario de Soporte</h3>
+        <div className="contact-card">
+          <div className="contact-info">
+            <div className="contact-info-content">
+              <div className="contact-icon-box">🚗</div>
+              <h2>Hoy No Circula</h2>
+              <p>
+                ¿Tienes dudas sobre verificación, restricciones o tu registro?
+                Escríbenos y te respondemos lo antes posible.
+              </p>
 
-          {status.message && (
-            <div
-              style={{
-                marginBottom: 15,
-                padding: "10px 12px",
-                borderRadius: 6,
-                fontSize: 14,
-                border: status.type === "success" ? "1px solid #b7eb8f" : "1px solid #ffa39e",
-                background: status.type === "success" ? "#f6ffed" : "#fff1f0",
-                color: status.type === "success" ? "#135200" : "#a8071a",
-              }}
-            >
-              {status.message}
+              <div className="contact-highlights">
+                <div className="contact-highlight">
+                  <span>✓</span>
+                  <p>Soporte para ciudadanos y empresas</p>
+                </div>
+                <div className="contact-highlight">
+                  <span>✓</span>
+                  <p>Atención sobre circulación y verificación</p>
+                </div>
+                <div className="contact-highlight">
+                  <span>✓</span>
+                  <p>Respuesta por correo electrónico</p>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
 
-          <form ref={form} onSubmit={sendEmail}>
-            <input name="nombre" type="text" placeholder="Nombre completo" required />
-            <input name="correo" type="email" placeholder="Correo electrónico" required />
-            <input name="rol" type="text" placeholder="Rol (Ciudadano, Empresa...)" required />
-            <input name="asunto" type="text" placeholder="Asunto" required />
-            <textarea name="mensaje" placeholder="Escribe tu mensaje..." required />
+          <div className="contact-form">
+            <div className="contact-form-header">
+              <h3>Formulario de Soporte</h3>
+              <p>Completa los datos y envíanos tu mensaje.</p>
+            </div>
 
-            <button type="submit" disabled={sending}>
-              {sending ? "Enviando..." : "Enviar Mensaje"}
-            </button>
-          </form>
+            {status.message && (
+              <div
+                className={`contact-status ${
+                  status.type === "success" ? "success" : "error"
+                }`}
+              >
+                {status.message}
+              </div>
+            )}
+
+            <form ref={form} onSubmit={sendEmail} className="contact-form-fields">
+              <div className="contact-grid">
+                <div className="contact-field">
+                  <label htmlFor="nombre">Nombre completo</label>
+                  <input
+                    id="nombre"
+                    name="nombre"
+                    type="text"
+                    placeholder="Nombre completo"
+                    required
+                  />
+                </div>
+
+                <div className="contact-field">
+                  <label htmlFor="correo">Correo electrónico</label>
+                  <input
+                    id="correo"
+                    name="correo"
+                    type="email"
+                    placeholder="Correo electrónico"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="contact-grid">
+                <div className="contact-field">
+                  <label htmlFor="rol">Rol</label>
+                  <input
+                    id="rol"
+                    name="rol"
+                    type="text"
+                    placeholder="Rol (Ciudadano, Empresa...)"
+                    required
+                  />
+                </div>
+
+                <div className="contact-field">
+                  <label htmlFor="asunto">Asunto</label>
+                  <input
+                    id="asunto"
+                    name="asunto"
+                    type="text"
+                    placeholder="Asunto"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="contact-field">
+                <label htmlFor="mensaje">Mensaje</label>
+                <textarea
+                  id="mensaje"
+                  name="mensaje"
+                  placeholder="Escribe tu mensaje..."
+                  required
+                />
+              </div>
+
+              <button type="submit" disabled={sending}>
+                {sending ? "Enviando..." : "Enviar Mensaje"}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 
