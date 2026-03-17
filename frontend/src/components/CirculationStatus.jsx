@@ -145,9 +145,7 @@ const CirculationStatus = () => {
     <div className="status-container">
       <div className="status-header">
         <h2>Consulta de Circulación</h2>
-        <p>
-          Consulta si tu vehículo está registrado y si puede circular hoy.
-        </p>
+        <p>Consulta si tu vehículo está registrado y si puede circular hoy.</p>
         <span className="status-subhelper">
           Selecciona tu entidad y valida la matrícula con el formato correcto.
         </span>
@@ -210,7 +208,8 @@ const CirculationStatus = () => {
           {result.fromDatabase && (
             <div className="result-meta">
               <p>
-                Se usó el holograma registrado en el sistema: <strong>{result.holograma}</strong>.
+                Se usó el holograma registrado en el sistema:{' '}
+                <strong>{result.holograma}</strong>.
               </p>
 
               {result.hologramaSobrescritoPorBD && (
@@ -239,7 +238,8 @@ const CirculationStatus = () => {
           {result.fromDatabase && (
             <div className="result-meta">
               <p>
-                Se usó el holograma registrado en el sistema: <strong>{result.holograma}</strong>.
+                Se usó el holograma registrado en el sistema:{' '}
+                <strong>{result.holograma}</strong>.
               </p>
 
               {result.hologramaSobrescritoPorBD && (
@@ -258,8 +258,8 @@ const CirculationStatus = () => {
           <h3>🚘 Matrícula {result.placa} no encontrada</h3>
           <p>
             No encontramos la matrícula <strong>{result.placa}</strong> en la base de datos para{' '}
-            <strong>{result.estado}</strong>. Para consultar correctamente, es necesario
-            iniciar sesión o registrarse y registrar previamente el vehículo en el sistema.
+            <strong>{result.estado}</strong>. Para consultar correctamente, es necesario iniciar
+            sesión o registrarse y registrar previamente el vehículo en el sistema.
           </p>
 
           <div className="result-actions">

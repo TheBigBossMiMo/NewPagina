@@ -1,9 +1,61 @@
+import { useEffect, useState } from 'react';
 import calendarioVerificacion from '../assets/calendario_verificacion.png';
 import engomadoColores from '../assets/engomado_colores.jpg';
 import contingenciaInfo from '../assets/contingencia.jpg';
 import './Informacion.css';
 
+const featureSlides = [
+  {
+    id: 1,
+    icon: '🔎',
+    title: 'Consulta rápida',
+    description:
+      'Verifica de forma inmediata el estatus de circulación de tu vehículo con base en sus datos principales.'
+  },
+  {
+    id: 2,
+    icon: 'ℹ️',
+    title: 'Información del programa',
+    description:
+      'Conoce cómo funciona el programa Hoy No Circula, sus reglas generales y su objetivo ambiental.'
+  },
+  {
+    id: 3,
+    icon: '👤',
+    title: 'Registro de usuario',
+    description:
+      'Crea una cuenta para acceder a más servicios y administrar tu información dentro del sistema.'
+  },
+  {
+    id: 4,
+    icon: '🔐',
+    title: 'Inicio de sesión',
+    description:
+      'Accede al portal para consultar funciones avanzadas y dar seguimiento a tu información.'
+  }
+];
+
 const Informacion = () => {
+  const [currentFeature, setCurrentFeature] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentFeature((prev) => (prev + 1) % featureSlides.length);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handlePrevFeature = () => {
+    setCurrentFeature((prev) =>
+      prev === 0 ? featureSlides.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextFeature = () => {
+    setCurrentFeature((prev) => (prev + 1) % featureSlides.length);
+  };
+
   return (
     <div className="info-page">
       <section className="info-hero">
@@ -46,6 +98,60 @@ const Informacion = () => {
             atmósfera.
           </p>
         </article>
+      </section>
+
+      <section className="info-section info-features-carousel-section">
+        <div className="info-section-header">
+          <h2>¿Qué puedes hacer en el sistema?</h2>
+          <p>
+            Aquí puedes visualizar de forma más clara las funciones principales
+            del portal mediante este carrusel informativo.
+          </p>
+        </div>
+
+        <div className="info-feature-carousel-shell">
+          <button
+            type="button"
+            className="info-feature-arrow"
+            onClick={handlePrevFeature}
+            aria-label="Ver función anterior"
+          >
+            ‹
+          </button>
+
+          <article className="info-feature-card">
+            <div className="info-feature-icon-circle">
+              {featureSlides[currentFeature].icon}
+            </div>
+
+            <div className="info-feature-content">
+              <span className="info-mini-badge">Funciones del sistema</span>
+              <h3>{featureSlides[currentFeature].title}</h3>
+              <p>{featureSlides[currentFeature].description}</p>
+            </div>
+          </article>
+
+          <button
+            type="button"
+            className="info-feature-arrow"
+            onClick={handleNextFeature}
+            aria-label="Ver siguiente función"
+          >
+            ›
+          </button>
+        </div>
+
+        <div className="info-feature-dots">
+          {featureSlides.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`info-feature-dot ${index === currentFeature ? 'active' : ''}`}
+              onClick={() => setCurrentFeature(index)}
+              aria-label={`Ir a la función ${index + 1}`}
+            />
+          ))}
+        </div>
       </section>
 
       <section className="info-section">

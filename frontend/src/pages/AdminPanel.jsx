@@ -1,100 +1,217 @@
 import { useState } from 'react';
 import './AdminPanel.css';
 
+import verificacionImg from '../assets/verificacion_vehicular.png';
+import calendarioImg from '../assets/calendario_verificacion.png';
+import estadoImg from '../assets/estado_verificacion.png';
+
+const imageSections = [
+  {
+    id: 1,
+    title: 'Verificación Vehicular',
+    image: verificacionImg,
+    alt: 'Verificación Vehicular',
+    badge: 'Consulta visual',
+    description:
+      'En esta sección puedes visualizar información general sobre la verificación vehicular, incluyendo criterios básicos relacionados con hologramas, periodos y validaciones aplicables al vehículo.'
+  },
+  {
+    id: 2,
+    title: 'Calendario de Verificación',
+    image: calendarioImg,
+    alt: 'Calendario de Verificación',
+    badge: 'Calendario oficial',
+    description:
+      'Aquí se muestra el calendario de verificación para identificar el periodo correspondiente según el color del engomado y la terminación de placa. Esto permite consultar con mayor claridad cuándo corresponde verificar.'
+  },
+  {
+    id: 3,
+    title: 'Estado de Verificación del Vehículo',
+    image: estadoImg,
+    alt: 'Estado de Verificación del Vehículo',
+    badge: 'Estado vehicular',
+    description:
+      'Esta referencia permite entender visualmente el estado de verificación del vehículo y los elementos que se consideran al momento de revisar si cumple con las disposiciones establecidas.'
+  }
+];
+
 const AdminPanel = () => {
-  // 0 = Normal, 1 = Fase 1, 2 = Fase 2
-  const [faseContingencia, setFaseContingencia] = useState(0); 
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  const handleActivarFase = (fase) => {
-    // Evita re-actualizar si ya estamos en esa fase
-    if (fase === faseContingencia) return; 
-
-    setFaseContingencia(fase);
-    
-    const mensajes = [
-      '✅ Contingencia desactivada. Circulación normal.',
-      '⚠️ ¡Alerta! Contingencia Fase 1 activada. Doble Hoy No Circula.',
-      '🛑 ¡Peligro! Contingencia Fase 2 activada. Restricción severa.'
-    ];
-    
-    // Simulación de petición al Backend
-    console.log(`[Admin Log] Actualizando BD a Fase ${fase}...`);
-    alert(mensajes[fase]);
+  const handleOpenImage = (section) => {
+    setSelectedImage(section);
   };
 
-  // Helper para el texto dinámico
-  const obtenerNombreFase = (fase) => {
-    if (fase === 0) return '🌿 NORMAL';
-    if (fase === 1) return '⚠️ FASE 1';
-    return '🛑 FASE 2';
+  const handleCloseImage = () => {
+    setSelectedImage(null);
   };
 
   return (
     <div className="admin-container">
-      <header className="admin-header">
-        <h2>Panel de Control</h2>
-        <span className="admin-badge">👑 SuperAdmin</span>
-      </header>
+      {selectedImage && (
+        <div className="image-modal-overlay">
+          <div className="image-modal">
+            <div className="image-modal-header">
+              <div>
+                <span className="image-modal-badge">{selectedImage.badge}</span>
+                <h3>{selectedImage.title}</h3>
+              </div>
 
-      <div className="dashboard-grid">
-        
-        {/* Tarjeta de Control de Contingencias */}
-        <div className="dashboard-card contingencia-card">
-          <h3>Control de Contingencia Ambiental</h3>
-          
-          <p className="estado-actual">
-            Estado del sistema: {' '}
-            <span className={`estado-texto fase-${faseContingencia}`}>
-              {obtenerNombreFase(faseContingencia)}
-            </span>
-          </p>
-          
-          <div className="btn-group">
-            <button 
-              className={`btn-control btn-normal ${faseContingencia === 0 ? 'active' : ''}`}
-              onClick={() => handleActivarFase(0)}
-            >
-              Desactivar (Normal)
-            </button>
-            <button 
-              className={`btn-control btn-fase1 ${faseContingencia === 1 ? 'active' : ''}`}
-              onClick={() => handleActivarFase(1)}
-            >
-              Activar Fase 1
-            </button>
-            <button 
-              className={`btn-control btn-fase2 ${faseContingencia === 2 ? 'active' : ''}`}
-              onClick={() => handleActivarFase(2)}
-            >
-              Activar Fase 2
-            </button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={handleCloseImage}
+                aria-label="Cerrar imagen"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="image-modal-text">{selectedImage.description}</p>
+
+            <div className="image-modal-preview">
+              <img
+                src={selectedImage.image}
+                alt={selectedImage.alt}
+                className="image-modal-img"
+              />
+            </div>
           </div>
         </div>
+      )}
 
-        {/* Tarjeta de Estadísticas Rápidas */}
-        <div className="dashboard-card stats-card">
-          <h3>Estadísticas Rápidas</h3>
-          <ul className="stats-list">
-            <li>
-              <span>👥 Usuarios Registrados</span> 
-              <strong>1,245</strong>
-            </li>
-            <li>
-              <span>🚗 Vehículos en BD</span> 
-              <strong>3,890</strong>
-            </li>
-            <li>
-              <span>🔍 Consultas de Hoy</span>
-              <strong>450</strong>
-            </li>
-            <li>
-              <span>⚠️ Multas Emitidas</span> 
-              <strong>12</strong>
-            </li>
-          </ul>
+      {showMapModal && (
+        <div className="image-modal-overlay">
+          <div className="image-modal map-modal-custom">
+            <div className="image-modal-header">
+              <div>
+                <span className="image-modal-badge">Mapa interactivo</span>
+                <h3>Mapa de Centros de Verificación</h3>
+              </div>
+
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowMapModal(false)}
+                aria-label="Cerrar mapa"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="image-modal-text">
+              En esta sección puedes consultar una vista interactiva de apoyo para ubicar
+              centros de verificación. Más adelante puedes conectar este módulo con una API
+              más completa o con ubicaciones reales personalizadas.
+            </p>
+
+            <div className="map-frame-wrapper">
+              <iframe
+                title="Mapa de Centros de Verificación"
+                className="map-frame"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=-99.40%2C19.20%2C-98.80%2C19.70&layer=mapnik"
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            <div className="map-actions">
+              <a
+                href="https://www.openstreetmap.org/#map=11/19.4326/-99.1332"
+                target="_blank"
+                rel="noreferrer"
+                className="section-action-btn"
+              >
+                Abrir mapa completo
+              </a>
+            </div>
+          </div>
         </div>
-        
-      </div>
+      )}
+
+      <section className="services-hero">
+        <span className="services-hero-badge">Servicios del módulo</span>
+        <h2>Servicios de Verificación</h2>
+        <p>
+          Consulta información visual relevante sobre verificación vehicular,
+          calendario, estado del vehículo y acceso a un mapa interactivo de
+          centros de verificación.
+        </p>
+      </section>
+
+      {imageSections.map((section, index) => (
+        <section
+          key={section.id}
+          className={`service-section ${index % 2 === 1 ? 'reverse' : ''}`}
+        >
+          <div className="service-section-content">
+            <span className="service-badge">{section.badge}</span>
+            <h3>{section.title}</h3>
+            <p>{section.description}</p>
+
+            <button
+              type="button"
+              className="section-action-btn"
+              onClick={() => handleOpenImage(section)}
+            >
+              Ver imagen en grande
+            </button>
+          </div>
+
+          <div
+            className="service-section-image"
+            onClick={() => handleOpenImage(section)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleOpenImage(section);
+              }
+            }}
+          >
+            <img src={section.image} alt={section.alt} />
+            <div className="image-zoom-hint">🔍 Clic para ampliar</div>
+          </div>
+        </section>
+      ))}
+
+      <section className="service-section service-map-section">
+        <div className="service-section-content">
+          <span className="service-badge">Ubicación</span>
+          <h3>Mapa de Centros de Verificación</h3>
+          <p>
+            Accede a una vista interactiva del mapa para ubicar centros de verificación.
+            Este apartado puede servir como referencia inicial y después conectarse con
+            una API más robusta o con direcciones específicas según tu proyecto.
+          </p>
+
+          <button
+            type="button"
+            className="section-action-btn"
+            onClick={() => setShowMapModal(true)}
+          >
+            Abrir mapa interactivo
+          </button>
+        </div>
+
+        <div
+          className="service-map-preview"
+          onClick={() => setShowMapModal(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              setShowMapModal(true);
+            }
+          }}
+        >
+          <div className="map-preview-icon">📍</div>
+          <strong>Centros de Verificación</strong>
+          <span>Vista interactiva disponible</span>
+        </div>
+      </section>
     </div>
   );
 };
