@@ -74,6 +74,22 @@ const Navbar = () => {
     navigate('/');
   };
 
+  // ✅ helper para marcar links activos
+  const isActiveRoute = (routes) => {
+    return routes.includes(location.pathname);
+  };
+
+  const isVehiculosActive = () => {
+    return [
+      '/registro',
+      '/vehiculos',
+      '/mis-vehiculos',
+      '/registrar-vehiculo',
+      '/editar-vehiculo',
+      '/eliminar-vehiculo'
+    ].includes(location.pathname);
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-brand">
@@ -95,7 +111,7 @@ const Navbar = () => {
         <li>
           <Link
             to="/"
-            className={`nav-link-pill ${location.pathname === '/' ? 'active-nav-link' : ''}`}
+            className={`nav-link-pill ${isActiveRoute(['/']) ? 'active-nav-link' : ''}`}
           >
             Inicio
           </Link>
@@ -104,7 +120,7 @@ const Navbar = () => {
         <li>
           <Link
             to="/informacion"
-            className={`nav-link-pill ${location.pathname === '/informacion' ? 'active-nav-link' : ''}`}
+            className={`nav-link-pill ${isActiveRoute(['/informacion']) ? 'active-nav-link' : ''}`}
           >
             Información
           </Link>
@@ -115,7 +131,7 @@ const Navbar = () => {
             <li>
               <Link
                 to="/registrarse-usuario"
-                className={`nav-link-pill ${location.pathname === '/registrarse-usuario' ? 'active-nav-link' : ''}`}
+                className={`nav-link-pill ${isActiveRoute(['/registrarse-usuario']) ? 'active-nav-link' : ''}`}
               >
                 Registrarse
               </Link>
@@ -124,7 +140,7 @@ const Navbar = () => {
             <li>
               <Link
                 to="/login"
-                className={`login-btn ${location.pathname === '/login' ? 'active-login-btn' : ''}`}
+                className={`login-btn ${isActiveRoute(['/login']) ? 'active-login-btn' : ''}`}
               >
                 Login
               </Link>
@@ -137,24 +153,27 @@ const Navbar = () => {
             <li>
               <Link
                 to="/registro"
-                className={`nav-link-pill ${location.pathname === '/registro' ? 'active-nav-link' : ''}`}
+                className={`nav-link-pill ${isVehiculosActive() ? 'active-nav-link' : ''}`}
               >
-                Mis Vehículos
+                Vehículos
               </Link>
             </li>
 
             <li>
               <Link
                 to="/perfil"
-                className={`nav-link-pill ${location.pathname === '/perfil' ? 'active-nav-link' : ''}`}
+                className={`nav-link-pill ${isActiveRoute(['/perfil']) ? 'active-nav-link' : ''}`}
               >
                 Mi Perfil
               </Link>
             </li>
 
             <li>
-              <Link to="/admin" className="nav-link-pill admin-link">
-                Contigencia
+              <Link
+                to="/admin"
+                className={`nav-link-pill admin-link ${isActiveRoute(['/admin']) ? 'active-nav-link' : ''}`}
+              >
+                Contingencia
               </Link>
             </li>
           </>
