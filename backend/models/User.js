@@ -1,66 +1,264 @@
-const mongoose = require("mongoose");
+const User = require("../models/User");
+const SibApiV3Sdk = require("sib-api-v3-sdk");
 const bcrypt = require("bcryptjs");
 
-const userSchema = new mongoose.Schema(
-  {
-    fullName: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true
-    },
-    phone: {
-      type: String,
-      default: ""
-    },
-    password: {
-      type: String,
-      default: ""
-    },
-    verified: {
-      type: Boolean,
-      default: false
-    },
-    provider: {
-      type: String,
-      enum: ["local", "google"],
-      default: "local"
-    },
-    picture: {
-      type: String,
-      default: ""
+let otpStore = {};
+
+const OTP_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutos
+
+const normalizeEmail = (email) => (email || "").trim().toLowerCase();
+
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications["api-key"];
+apiKey.apiKey = process.env.BREVO_API_KEY;
+
+const tranEmailApi = new SibApiV3Sdk.TransactionalEmailsApi();
+
+exports.sendOtp = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "El correo es obligatorio."
+      });
     }
-  },
-  {
-    timestamps: true
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta normal."
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    otpStore[email] = {
+      code: otp,
+      expiresAt: Date.now() + OTP_EXPIRATION_MS
+    };
+
+    await tranEmailApi.sendTransacEmail({
+      sender: {
+        name: "Hoy No Circula",
+        email: "soporte.hoynocircula@gmail.com"
+      },
+      to: [{ email }],
+      subject: "Código de verificación",
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Verificación de cuenta</h2>
+          <p>Tu código de verificación es:</p>
+          <h1 style="letter-spacing: 4px;">${otp}</h1>
+          <p>Este código expira en 5 minutos.</p>
+        </div>
+      `
+    });
+
+    return res.json({
+      success: true,
+      message: "Código enviado al correo"
+    });
+  } catch (error) {
+    console.error("Error enviando OTP:", error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        error?.response?.body?.message ||
+        error.message ||
+        "Error enviando correo"
+    });
   }
-);
-
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) {
-    return;
-  }
-
-  if (!this.password || this.password.trim() === "") {
-    return;
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-});
-
-userSchema.methods.comparePassword = async function (candidatePassword) {
-  if (!this.password || this.password.trim() === "") {
-    return false;
-  }
-
-  return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model("User", userSchema);
+exports.verifyOtp = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const { otp, fullName, phone, password } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "El correo y el código son obligatorios."
+      });
+    }
+
+    const savedOtpData = otpStore[email];
+
+    if (!savedOtpData) {
+      return res.status(400).json({
+        success: false,
+        message: "No hay un código activo para este correo. Solicita uno nuevo."
+      });
+    }
+
+    if (Date.now() > savedOtpData.expiresAt) {
+      delete otpStore[email];
+      return res.status(400).json({
+        success: false,
+        message: "El código ha expirado. Solicita uno nuevo."
+      });
+    }
+
+    if (savedOtpData.code !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Código incorrecto"
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      delete otpStore[email];
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta"
+      });
+    }
+
+    delete otpStore[email];
+
+    const user = new User({
+      fullName: fullName || "",
+      email,
+      phone: phone || "",
+      password: password || "",
+      verified: true,
+      provider: "local"
+    });
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Código verificado correctamente",
+      user
+    });
+  } catch (error) {
+    console.error("Error verificando OTP:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor"
+    });
+  }
+};
+
+exports.googleRegister = async (req, res) => {
+  try {
+    const fullName = req.body.fullName;
+    const email = normalizeEmail(req.body.email);
+    const picture = req.body.picture;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "El correo es obligatorio."
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo ya está registrado. Inicia sesión con esa cuenta de google."
+      });
+    }
+
+    const user = new User({
+      fullName: fullName || "",
+      email,
+      verified: true,
+      provider: "google",
+      picture: picture || ""
+    });
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Cuenta registrada con Google correctamente.",
+      user
+    });
+  } catch (error) {
+    console.error("Error registrando con Google:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al registrar con Google."
+    });
+  }
+};
+
+/* =========================
+   LOGIN NORMAL
+========================= */
+exports.login = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const password = (req.body.password || "").trim();
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "El correo y la contraseña son obligatorios."
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo no está registrado."
+      });
+    }
+
+    if (user.provider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "Este correo fue registrado con Google. Inicia sesión con Google."
+      });
+    }
+
+    const isPasswordCorrect = await user.comparePassword(password);
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Contraseña incorrecta."
+      });
+    }
+
+    const storedPassword = (user.password || "").trim();
+    const looksHashed =
+      storedPassword.startsWith("$2a$") ||
+      storedPassword.startsWith("$2b$") ||
+      storedPassword.startsWith("$2y$");
+
+    if (!looksHashed && storedPassword === password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      await user.save();
+    }
+
+    return res.json({
+      success: true,
+      message: "Inicio de sesión correcto.",
+      user
+    });
+  } catch (error) {
+    console.error("Error en login:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al iniciar sesión."
+    });
+  }
+};
