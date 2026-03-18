@@ -227,25 +227,39 @@ exports.login = async (req, res) => {
       });
     }
 
-    const isPasswordCorrect = await user.comparePassword(password);
+    const storedPassword = (user.password || "").trim();
+
+    if (!storedPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Este usuario no tiene contraseña configurada."
+      });
+    }
+
+    const looksHashed =
+      storedPassword.startsWith("$2a$") ||
+      storedPassword.startsWith("$2b$") ||
+      storedPassword.startsWith("$2y$");
+
+    let isPasswordCorrect = false;
+
+    if (looksHashed) {
+      isPasswordCorrect = await user.comparePassword(password);
+    } else {
+      isPasswordCorrect = storedPassword === password;
+
+      if (isPasswordCorrect) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(password, salt);
+        await user.save();
+      }
+    }
 
     if (!isPasswordCorrect) {
       return res.status(400).json({
         success: false,
         message: "Contraseña incorrecta."
       });
-    }
-
-    const storedPassword = (user.password || "").trim();
-    const looksHashed =
-      storedPassword.startsWith("$2a$") ||
-      storedPassword.startsWith("$2b$") ||
-      storedPassword.startsWith("$2y$");
-
-    if (!looksHashed && storedPassword === password) {
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(password, salt);
-      await user.save();
     }
 
     return res.json({
