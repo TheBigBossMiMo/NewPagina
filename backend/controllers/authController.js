@@ -128,8 +128,6 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    delete otpStore[email];
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password.trim(), salt);
 
@@ -143,6 +141,8 @@ exports.verifyOtp = async (req, res) => {
     });
 
     await user.save();
+
+    delete otpStore[email];
 
     return res.json({
       success: true,
