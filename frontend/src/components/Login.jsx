@@ -10,6 +10,11 @@ const SESSION_USER_KEY = 'session_user';
 const GOOGLE_USER_KEY = 'google_user';
 const REMEMBER_ME_KEY = 'remember_me';
 
+const API_BASE =
+  window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://hoynocircula-backend.onrender.com';
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -94,7 +99,7 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     clearUX();
 
@@ -106,45 +111,60 @@ const Login = () => {
       return;
     }
 
-    const users = getUsers();
-    const user = users.find((u) => u.email === email);
-
-    if (!user) {
-      setMsg({ type: 'err', text: 'Este correo no está registrado.' });
-      return;
-    }
-
-    if (user.provider === 'google' && !user.password) {
-      setMsg({
-        type: 'warn',
-        text: 'Esta cuenta fue registrada con Google. Usa el botón de Google para iniciar sesión.'
-      });
-      return;
-    }
-
-    if (user.password !== password) {
-      setMsg({ type: 'err', text: 'Contraseña incorrecta.' });
-      return;
-    }
-
     setSaving(true);
 
-    setTimeout(() => {
-      setSession(user, formData.rememberMe);
-      setSaving(false);
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'No se pudo iniciar sesión.');
+      }
+
+      const backendUser = data.user || {};
+
+      const sessionUser = {
+        _id: backendUser._id || '',
+        fullName: backendUser.fullName || backendUser.name || '',
+        email: normalizeEmail(backendUser.email || email),
+        phone: backendUser.phone || '',
+        provider: backendUser.provider || 'local',
+        verified: backendUser.verified ?? true,
+        picture: backendUser.picture || ''
+      };
+
+      setSession(sessionUser, formData.rememberMe);
 
       setMsg({
         type: 'ok',
-        text: `Bienvenido, ${user.fullName || user.email}.`
+        text: `Bienvenido, ${sessionUser.fullName || sessionUser.email}.`
       });
 
       setTimeout(() => {
         navigate('/');
       }, 700);
-    }, 900);
+    } catch (error) {
+      console.error('Error al iniciar sesión:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'No se pudo iniciar sesión.'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleGoogleSuccess = (credentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
       clearUX();
 
@@ -158,30 +178,74 @@ const Login = () => {
         verified: true
       };
 
-      const users = getUsers();
-      const existingUser = users.find((u) => u.email === googleUser.email);
-
-      let sessionUser = existingUser;
-
-      if (!existingUser) {
-        const newGoogleUser = {
+      const response = await fetch(`${API_BASE}/api/auth/google-register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           fullName: googleUser.fullName,
           email: googleUser.email,
-          picture: googleUser.picture,
-          provider: 'google',
-          verified: true
-        };
+          picture: googleUser.picture
+        })
+      });
 
-        saveUsers([...users, newGoogleUser]);
-        sessionUser = newGoogleUser;
+      const data = await response.json();
+
+      let sessionUser = null;
+
+      if (response.ok) {
+        const backendUser = data.user || {};
+        sessionUser = {
+          _id: backendUser._id || '',
+          fullName: backendUser.fullName || googleUser.fullName,
+          email: normalizeEmail(backendUser.email || googleUser.email),
+          phone: backendUser.phone || '',
+          provider: backendUser.provider || 'google',
+          verified: backendUser.verified ?? true,
+          picture: backendUser.picture || googleUser.picture || ''
+        };
+      } else {
+        const backendMessage = (data.message || '').toLowerCase();
+
+        if (
+          backendMessage.includes('ya está registrado') ||
+          backendMessage.includes('ya esta registrado')
+        ) {
+          sessionUser = {
+            fullName: googleUser.fullName,
+            email: googleUser.email,
+            picture: googleUser.picture,
+            provider: 'google',
+            verified: true
+          };
+        } else {
+          throw new Error(data.message || 'No se pudo iniciar sesión con Google.');
+        }
       }
 
-      localStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(googleUser));
-      setSession(sessionUser || googleUser, true);
+      const users = getUsers();
+      const existingUser = users.find((u) => u.email === sessionUser.email);
+
+      if (!existingUser) {
+        saveUsers([
+          ...users,
+          {
+            fullName: sessionUser.fullName,
+            email: sessionUser.email,
+            picture: sessionUser.picture,
+            provider: sessionUser.provider,
+            verified: sessionUser.verified
+          }
+        ]);
+      }
+
+      localStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(sessionUser));
+      setSession(sessionUser, true);
 
       setMsg({
         type: 'ok',
-        text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
+        text: `Inicio de sesión con Google exitoso. Bienvenido, ${sessionUser.fullName}.`
       });
 
       setTimeout(() => {
@@ -191,7 +255,7 @@ const Login = () => {
       console.error('Error al procesar inicio con Google:', error);
       setMsg({
         type: 'err',
-        text: 'No se pudo iniciar sesión con Google.'
+        text: error.message || 'No se pudo iniciar sesión con Google.'
       });
     }
   };
