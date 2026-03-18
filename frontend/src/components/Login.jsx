@@ -4,11 +4,12 @@ import './Login.css';
 import { GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 
-const USERS_KEY = 'mock_users';
 const SESSION_KEY = 'token';
 const SESSION_USER_KEY = 'session_user';
 const GOOGLE_USER_KEY = 'google_user';
 const REMEMBER_ME_KEY = 'remember_me';
+
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -24,32 +25,15 @@ const Login = () => {
 
   const normalizeEmail = (email) => (email || '').trim().toLowerCase();
 
-  const getUsers = () => {
-    try {
-      const raw = localStorage.getItem(USERS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveUsers = (users) => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  };
-
-  const getGoogleUser = () => {
-    try {
-      const raw = localStorage.getItem(GOOGLE_USER_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  };
-
   const setSession = (user, rememberMe = false) => {
     localStorage.setItem(SESSION_KEY, 'mock-token');
     localStorage.setItem(SESSION_USER_KEY, JSON.stringify(user));
     localStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
+
+    if (user?.provider === 'google') {
+      localStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(user));
+    }
+
     window.dispatchEvent(new Event('auth-changed'));
   };
 
@@ -94,7 +78,7 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     clearUX();
 
@@ -106,32 +90,29 @@ const Login = () => {
       return;
     }
 
-    const users = getUsers();
-    const user = users.find((u) => u.email === email);
+    try {
+      setSaving(true);
 
-    if (!user) {
-      setMsg({ type: 'err', text: 'Este correo no está registrado.' });
-      return;
-    }
-
-    if (user.provider === 'google' && !user.password) {
-      setMsg({
-        type: 'warn',
-        text: 'Esta cuenta fue registrada con Google. Usa el botón de Google para iniciar sesión.'
+      const response = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          password
+        })
       });
-      return;
-    }
 
-    if (user.password !== password) {
-      setMsg({ type: 'err', text: 'Contraseña incorrecta.' });
-      return;
-    }
+      const data = await response.json();
 
-    setSaving(true);
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || 'No se pudo iniciar sesión.');
+      }
 
-    setTimeout(() => {
+      const user = data.user;
+
       setSession(user, formData.rememberMe);
-      setSaving(false);
 
       setMsg({
         type: 'ok',
@@ -141,57 +122,86 @@ const Login = () => {
       setTimeout(() => {
         navigate('/');
       }, 700);
-    }, 900);
+    } catch (error) {
+      console.error('Error en login:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'No se pudo iniciar sesión.'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleGoogleSuccess = (credentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
       clearUX();
 
       const decoded = jwtDecode(credentialResponse.credential);
 
       const googleUser = {
-        fullName: decoded.name,
+        fullName: decoded.name || '',
         email: normalizeEmail(decoded.email),
-        picture: decoded.picture,
+        picture: decoded.picture || '',
         provider: 'google',
         verified: true
       };
 
-      const users = getUsers();
-      const existingUser = users.find((u) => u.email === googleUser.email);
-
-      let sessionUser = existingUser;
-
-      if (!existingUser) {
-        const newGoogleUser = {
+      const response = await fetch(`${API_URL}/google-register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           fullName: googleUser.fullName,
           email: googleUser.email,
-          picture: googleUser.picture,
-          provider: 'google',
-          verified: true
-        };
-
-        saveUsers([...users, newGoogleUser]);
-        sessionUser = newGoogleUser;
-      }
-
-      localStorage.setItem(GOOGLE_USER_KEY, JSON.stringify(googleUser));
-      setSession(sessionUser || googleUser, true);
-
-      setMsg({
-        type: 'ok',
-        text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
+          picture: googleUser.picture
+        })
       });
 
-      setTimeout(() => {
-        navigate('/');
-      }, 800);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setSession(data.user || googleUser, true);
+
+        setMsg({
+          type: 'ok',
+          text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
+        });
+
+        setTimeout(() => {
+          navigate('/');
+        }, 800);
+
+        return;
+      }
+
+      const backendMessage = data?.message || '';
+
+      if (
+        backendMessage.toLowerCase().includes('ya está registrado') ||
+        backendMessage.toLowerCase().includes('ya esta registrado')
+      ) {
+        setSession(googleUser, true);
+
+        setMsg({
+          type: 'ok',
+          text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
+        });
+
+        setTimeout(() => {
+          navigate('/');
+        }, 800);
+
+        return;
+      }
+
+      throw new Error(backendMessage || 'No se pudo iniciar sesión con Google.');
     } catch (error) {
       console.error('Error al procesar inicio con Google:', error);
       setMsg({
         type: 'err',
-        text: 'No se pudo iniciar sesión con Google.'
+        text: error.message || 'No se pudo iniciar sesión con Google.'
       });
     }
   };
