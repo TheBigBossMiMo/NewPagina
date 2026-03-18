@@ -13,6 +13,9 @@ const VehicleRegistration = () => {
   const currentYear = new Date().getFullYear();
   const maxModelYear = currentYear + MAX_FUTURE_MODEL_YEARS;
 
+  const [activeTab, setActiveTab] = useState('inicio');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [formData, setFormData] = useState({
     entidad: '',
     placa: '',
@@ -45,8 +48,6 @@ const VehicleRegistration = () => {
   const normalizePlate = (value) => {
     return (value || '').toUpperCase().replace(/\s+/g, '').trim();
   };
-
-  const rawPlate = formData.placa.replace(/-/g, '');
 
   const getLastDigit = (plate) => {
     const digits = (plate || '').match(/\d/g);
@@ -345,6 +346,26 @@ const VehicleRegistration = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleClearForm = () => {
+    setFormData({
+      entidad: '',
+      placa: '',
+      modelo: '',
+      holograma: ''
+    });
+
+    setTouched({
+      entidad: false,
+      placa: false,
+      modelo: false,
+      holograma: false
+    });
+
+    setSavedOk(false);
+    setCalendarVisible(false);
+    setToast(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -428,197 +449,396 @@ const VehicleRegistration = () => {
     return ok ? 'input-valid' : 'input-invalid';
   };
 
+  const handleSelectTab = (tab) => {
+    setActiveTab(tab);
+    setIsMenuOpen(false);
+  };
+
   return (
-    <div className="registration-shell">
-      <div className="registration-container">
-        {toast && <div className={`toast toast-${toast.type}`}>{toast.text}</div>}
+    <div className="vehicles-layout">
+      <aside className="vehicles-sidebar">
+        <h3>Vehículos</h3>
+        <p className="vehicles-sidebar-subtext">Gestión del módulo</p>
 
-        <div className="registration-top">
-          <h2>Registrar Vehículo</h2>
-          <p className="registration-subtitle">
-            Añade un auto a tu garaje para gestionar su circulación y futuras consultas.
-          </p>
-        </div>
+        <button
+          onClick={() => handleSelectTab('inicio')}
+          className={activeTab === 'inicio' ? 'active sidebar-home-btn' : 'sidebar-home-btn'}
+          type="button"
+        >
+          🏠 Inicio
+        </button>
 
-        <div className="semaforo-card">
-          <div className={`semaforo-dot semaforo-${resultadoHoy?.color || 'gray'}`} />
-          <div className="semaforo-info">
-            <div className="semaforo-title">{resultadoHoy?.title || 'Semáforo'}</div>
-            <div className="semaforo-detail">{resultadoHoy?.detail || '—'}</div>
+        <button
+          type="button"
+          className={`menu-toggle-btn ${isMenuOpen ? 'open' : ''}`}
+          onClick={() => setIsMenuOpen((prev) => !prev)}
+        >
+          <span>📂 Menú</span>
+          <span>{isMenuOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {isMenuOpen && (
+          <div className="vehicles-menu-list">
+            <button
+              onClick={() => handleSelectTab('registrar')}
+              className={activeTab === 'registrar' ? 'active' : ''}
+              type="button"
+            >
+              ➕ Registrar
+            </button>
+
+            <button
+              onClick={() => handleSelectTab('ver')}
+              className={activeTab === 'ver' ? 'active' : ''}
+              type="button"
+            >
+              🚗 Ver vehículos
+            </button>
+
+            <button
+              onClick={() => handleSelectTab('editar')}
+              className={activeTab === 'editar' ? 'active' : ''}
+              type="button"
+            >
+              ✏️ Editar
+            </button>
+
+            <button
+              onClick={() => handleSelectTab('eliminar')}
+              className={activeTab === 'eliminar' ? 'active' : ''}
+              type="button"
+            >
+              🗑️ Eliminar
+            </button>
           </div>
-        </div>
+        )}
+      </aside>
 
-        <form noValidate onSubmit={handleSubmit} className="registration-form">
-          <div className="form-grid">
-            <div className="form-group full-row">
-              <label htmlFor="entidad">Entidad</label>
-              <select
-                id="entidad"
-                name="entidad"
-                value={formData.entidad}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                className={inputClass('entidad', entidadOk)}
-                required
-              >
-                <option value="" disabled>
-                  Selecciona tu entidad
-                </option>
-                <option value="CDMX">CDMX</option>
-                <option value="EDOMEX">Estado de México</option>
-              </select>
-              {touched.entidad && !entidadOk && (
-                <small className="hint hint-error">Selecciona una entidad válida.</small>
-              )}
-            </div>
+      <div className="vehicles-content">
+        {activeTab === 'inicio' && (
+          <div className="registration-container vehicles-dashboard">
+            <div className="dashboard-hero">
+              <div className="dashboard-hero-badge">
+                <span>🚘</span>
+                <span>Panel inteligente de gestión vehicular</span>
+              </div>
 
-            <div className="form-group full-row">
-              <label htmlFor="placa">Placa</label>
-              <input
-                type="text"
-                id="placa"
-                name="placa"
-                value={formData.placa}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder={getPlatePlaceholder()}
-                required
-                maxLength={formData.entidad === 'EDOMEX' ? 10 : 7}
-                autoComplete="off"
-                className={inputClass('placa', placaOk)}
-              />
+              <div className="dashboard-hero-main">
+                <div className="dashboard-hero-copy">
+                  <div className="registration-top">
+                    <h2>Dashboard de Vehículos</h2>
+                    <p className="registration-subtitle">
+                      Administra tus vehículos desde un solo lugar. Usa el menú lateral para acceder a
+                      cada función del módulo.
+                    </p>
+                  </div>
 
-              <small className="hint">{getPlateHelper()}</small>
+                  <div className="dashboard-hero-chips">
+                    <span>Registro rápido</span>
+                    <span>Consulta de vehículos</span>
+                    <span>Edición segura</span>
+                    <span>Eliminación controlada</span>
+                  </div>
+                </div>
 
-              {touched.placa && !placaOk && (
-                <small className="hint hint-error">
-                  {formData.entidad === 'EDOMEX'
-                    ? 'Ingresa una placa válida del Estado de México.'
-                    : formData.entidad === 'CDMX'
-                    ? 'Ingresa una placa válida de CDMX.'
-                    : 'Selecciona la entidad y captura una placa válida.'}
-                </small>
-              )}
-
-              {touched.placa && placaOk && (
-                <small className="hint hint-ok">Placa válida ✅</small>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="modelo">Modelo (Año)</label>
-              <input
-                type="number"
-                id="modelo"
-                name="modelo"
-                value={formData.modelo}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                placeholder={`Ej. ${currentYear}`}
-                required
-                min={MIN_MODEL_YEAR}
-                max={maxModelYear}
-                className={inputClass('modelo', modeloOk)}
-              />
-
-              <small className="hint">
-                Rango permitido: {MIN_MODEL_YEAR} - {maxModelYear}
-              </small>
-
-              {touched.modelo && !modeloOk && (
-                <small className="hint hint-error">
-                  Ingresa un año válido. Se aceptan modelos desde {MIN_MODEL_YEAR} hasta {maxModelYear}.
-                </small>
-              )}
-
-              {touched.modelo && modeloOk && (
-                <small className="hint hint-ok">Año válido ✅</small>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="holograma">Holograma</label>
-              <select
-                id="holograma"
-                name="holograma"
-                value={formData.holograma}
-                onChange={handleChange}
-                onBlur={handleBlur}
-                required
-                className={inputClass('holograma', hologramaOk)}
-              >
-                <option value="" disabled>
-                  Selecciona holograma
-                </option>
-                <option value="00">Holograma 00</option>
-                <option value="0">Holograma 0</option>
-                <option value="1">Holograma 1</option>
-                <option value="2">Holograma 2</option>
-              </select>
-
-              {touched.holograma && !hologramaOk && (
-                <small className="hint hint-error">Selecciona un holograma válido.</small>
-              )}
-            </div>
-          </div>
-
-          <button type="submit" className="submit-btn" disabled={!isFormValid || saving}>
-            {saving ? (
-              <>
-                <span className="spinner" /> Guardando...
-              </>
-            ) : (
-              <>
-                <span>💾</span> Guardar Vehículo
-              </>
-            )}
-          </button>
-
-          <button type="submit" className="submit-btn" disabled={!isFormValid || saving}>
-                      {saving ? (
-                        <>
-                          <span className="spinner" /> Guardando...
-                        </>
-                      ) : (
-                        <>
-                          <span>💾</span> Guardar Vehículo
-                        </>
-                      )}
-                    </button>
-
-          {savedOk && (
-            <div className="saved-banner">
-              ✅ Vehículo guardado. Ya quedó registrado en el sistema.
-            </div>
-          )}
-        </form>
-
-        {calendarVisible && (
-          <div className="calendar-card">
-            <div className="calendar-head">
-              <div className="calendar-title">Calendario automático (14 días)</div>
-              <div className="calendar-subtitle">
-                Basado en placa + holograma. Fecha de hoy: {fmtDate(new Date())}
+                <div className="dashboard-hero-side">
+                  <div className="dashboard-highlight-card">
+                    <div className="dashboard-highlight-icon">⚡</div>
+                    <strong>Acceso centralizado</strong>
+                    <p>
+                      Desde este panel puedes iniciar el flujo de registro, consulta, edición o
+                      eliminación sin salir del módulo.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="calendar-grid">
-              {calendario.map((item, idx) => (
-                <div key={idx} className={`day-pill pill-${item.color}`}>
-                  <div className="day-top">
-                    <span className="day-name">{dayNameES(item.date)}</span>
-                    <span className="day-date">{fmtDate(item.date)}</span>
-                  </div>
-                  <div className="day-status">
-                    {item.color === 'red'
-                      ? '🔴 NO circula'
-                      : item.color === 'green'
-                      ? '🟢 Sí circula'
-                      : '⚪ Sin datos'}
-                  </div>
-                  <div className="day-reason">{item.detail}</div>
+            <div className="vehicles-stats">
+              <div className="vehicles-stat-card">
+                <span className="vehicles-stat-icon">🚗</span>
+                <div>
+                  <strong>Vehículos</strong>
+                  <p>Gestiona tus registros vehiculares.</p>
                 </div>
-              ))}
+              </div>
+
+              <div className="vehicles-stat-card">
+                <span className="vehicles-stat-icon">📅</span>
+                <div>
+                  <strong>Consultas</strong>
+                  <p>Revisa información de circulación y actualizaciones.</p>
+                </div>
+              </div>
+
+              <div className="vehicles-stat-card">
+                <span className="vehicles-stat-icon">⚙️</span>
+                <div>
+                  <strong>Acciones rápidas</strong>
+                  <p>Registra, consulta, edita o elimina datos fácilmente.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="vehicles-quick-grid">
+              <div className="vehicle-quick-card">
+                <span className="quick-icon">➕</span>
+                <h3>Registrar vehículo</h3>
+                <p>Agrega un nuevo vehículo con entidad, placa, modelo y holograma.</p>
+                <div className="quick-card-footer">Disponible desde el menú lateral</div>
+              </div>
+
+              <div className="vehicle-quick-card">
+                <span className="quick-icon">🚗</span>
+                <h3>Ver vehículos</h3>
+                <p>Consulta los vehículos registrados del usuario.</p>
+                <div className="quick-card-footer">Disponible desde el menú lateral</div>
+              </div>
+
+              <div className="vehicle-quick-card">
+                <span className="quick-icon">✏️</span>
+                <h3>Editar vehículo</h3>
+                <p>Actualiza la información de un vehículo registrado.</p>
+                <div className="quick-card-footer">Disponible desde el menú lateral</div>
+              </div>
+
+              <div className="vehicle-quick-card">
+                <span className="quick-icon">🗑️</span>
+                <h3>Eliminar vehículo</h3>
+                <p>Elimina registros que ya no necesites dentro del sistema.</p>
+                <div className="quick-card-footer">Disponible desde el menú lateral</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'registrar' && (
+          <div className="registration-shell">
+            <div className="registration-container">
+              {toast && <div className={`toast toast-${toast.type}`}>{toast.text}</div>}
+
+              <div className="registration-top">
+                <h2>Registrar Vehículo</h2>
+                <p className="registration-subtitle">
+                  Añade un auto a tu garaje para gestionar su circulación y futuras consultas.
+                </p>
+              </div>
+
+              <div className="semaforo-card">
+                <div className={`semaforo-dot semaforo-${resultadoHoy?.color || 'gray'}`} />
+                <div className="semaforo-info">
+                  <div className="semaforo-title">{resultadoHoy?.title || 'Semáforo'}</div>
+                  <div className="semaforo-detail">{resultadoHoy?.detail || '—'}</div>
+                </div>
+              </div>
+
+              <form noValidate onSubmit={handleSubmit} className="registration-form">
+                <div className="form-grid">
+                  <div className="form-group full-row">
+                    <label htmlFor="entidad">Entidad</label>
+                    <select
+                      id="entidad"
+                      name="entidad"
+                      value={formData.entidad}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={inputClass('entidad', entidadOk)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona tu entidad
+                      </option>
+                      <option value="CDMX">CDMX</option>
+                      <option value="EDOMEX">Estado de México</option>
+                    </select>
+                    {touched.entidad && !entidadOk && (
+                      <small className="hint hint-error">Selecciona una entidad válida.</small>
+                    )}
+                  </div>
+
+                  <div className="form-group full-row">
+                    <label htmlFor="placa">Placa</label>
+                    <input
+                      type="text"
+                      id="placa"
+                      name="placa"
+                      value={formData.placa}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder={getPlatePlaceholder()}
+                      required
+                      maxLength={formData.entidad === 'EDOMEX' ? 10 : 7}
+                      autoComplete="off"
+                      className={inputClass('placa', placaOk)}
+                    />
+
+                    <small className="hint">{getPlateHelper()}</small>
+
+                    {touched.placa && !placaOk && (
+                      <small className="hint hint-error">
+                        {formData.entidad === 'EDOMEX'
+                          ? 'Ingresa una placa válida del Estado de México.'
+                          : formData.entidad === 'CDMX'
+                          ? 'Ingresa una placa válida de CDMX.'
+                          : 'Selecciona la entidad y captura una placa válida.'}
+                      </small>
+                    )}
+
+                    {touched.placa && placaOk && (
+                      <small className="hint hint-ok">Placa válida ✅</small>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="modelo">Modelo (Año)</label>
+                    <input
+                      type="number"
+                      id="modelo"
+                      name="modelo"
+                      value={formData.modelo}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      placeholder={`Ej. ${currentYear}`}
+                      required
+                      min={MIN_MODEL_YEAR}
+                      max={maxModelYear}
+                      className={inputClass('modelo', modeloOk)}
+                    />
+
+                    <small className="hint">
+                      Rango permitido: {MIN_MODEL_YEAR} - {maxModelYear}
+                    </small>
+
+                    {touched.modelo && !modeloOk && (
+                      <small className="hint hint-error">
+                        Ingresa un año válido. Se aceptan modelos desde {MIN_MODEL_YEAR} hasta{' '}
+                        {maxModelYear}.
+                      </small>
+                    )}
+
+                    {touched.modelo && modeloOk && (
+                      <small className="hint hint-ok">Año válido ✅</small>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="holograma">Holograma</label>
+                    <select
+                      id="holograma"
+                      name="holograma"
+                      value={formData.holograma}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      required
+                      className={inputClass('holograma', hologramaOk)}
+                    >
+                      <option value="" disabled>
+                        Selecciona holograma
+                      </option>
+                      <option value="00">Holograma 00</option>
+                      <option value="0">Holograma 0</option>
+                      <option value="1">Holograma 1</option>
+                      <option value="2">Holograma 2</option>
+                    </select>
+
+                    {touched.holograma && !hologramaOk && (
+                      <small className="hint hint-error">Selecciona un holograma válido.</small>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button type="submit" className="submit-btn" disabled={!isFormValid || saving}>
+                    {saving ? (
+                      <>
+                        <span className="spinner" /> Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <span>💾</span> Guardar Vehículo
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="submit-btn secondary-btn"
+                    onClick={handleClearForm}
+                    disabled={saving}
+                  >
+                    <span>🧹</span> Limpiar formulario
+                  </button>
+                </div>
+
+                {savedOk && (
+                  <div className="saved-banner">
+                    ✅ Vehículo guardado. Ya quedó registrado en el sistema.
+                  </div>
+                )}
+              </form>
+
+              {calendarVisible && (
+                <div className="calendar-card">
+                  <div className="calendar-head">
+                    <div className="calendar-title">Calendario automático (14 días)</div>
+                    <div className="calendar-subtitle">
+                      Basado en placa + holograma. Fecha de hoy: {fmtDate(new Date())}
+                    </div>
+                  </div>
+
+                  <div className="calendar-grid">
+                    {calendario.map((item, idx) => (
+                      <div key={idx} className={`day-pill pill-${item.color}`}>
+                        <div className="day-top">
+                          <span className="day-name">{dayNameES(item.date)}</span>
+                          <span className="day-date">{fmtDate(item.date)}</span>
+                        </div>
+                        <div className="day-status">
+                          {item.color === 'red'
+                            ? '🔴 NO circula'
+                            : item.color === 'green'
+                            ? '🟢 Sí circula'
+                            : '⚪ Sin datos'}
+                        </div>
+                        <div className="day-reason">{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'ver' && (
+          <div className="registration-container">
+            <div className="registration-top">
+              <h2>Ver vehículos</h2>
+              <p className="registration-subtitle">
+                Aquí se mostrarán los vehículos registrados del usuario.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'editar' && (
+          <div className="registration-container">
+            <div className="registration-top">
+              <h2>Editar vehículo</h2>
+              <p className="registration-subtitle">
+                Aquí podrás actualizar la información de un vehículo registrado.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'eliminar' && (
+          <div className="registration-container">
+            <div className="registration-top">
+              <h2>Eliminar vehículo</h2>
+              <p className="registration-subtitle">
+                Aquí podrás eliminar un vehículo del sistema.
+              </p>
             </div>
           </div>
         )}

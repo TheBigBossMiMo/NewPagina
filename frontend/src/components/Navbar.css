@@ -71,6 +71,21 @@
   transform: scale(0.97);
 }
 
+/* ✅ ENLACE ACTIVO */
+.active-nav-link {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.12);
+  font-weight: 700;
+}
+
+.active-nav-link:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.14);
+}
+
+/* ✅ BOTÓN LOGIN */
 .login-btn {
   color: #d6dde5 !important;
   text-decoration: none;
@@ -91,6 +106,20 @@
   transform: translateY(-1px);
 }
 
+/* ✅ LOGIN ACTIVO */
+.active-login-btn {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.12);
+  font-weight: 700;
+}
+
+.active-login-btn:hover {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ✅ APP */
 .btn-descargar {
   background: linear-gradient(135deg, #ffd54f 0%, #ffc107 100%);
   color: #000;
@@ -200,6 +229,19 @@
     box-shadow: none;
   }
 
+  /* ✅ ACTIVO EN MÓVIL */
+  .active-nav-link {
+    color: #1d4ed8 !important;
+    background: #eaf3ff !important;
+    box-shadow: none !important;
+    font-weight: 700;
+  }
+
+  .active-nav-link:hover {
+    color: #1d4ed8 !important;
+    background: #eaf3ff !important;
+  }
+
   .login-btn {
     color: #0f172a !important;
     text-align: left;
@@ -212,6 +254,18 @@
     background: #f1f7ff;
     transform: translateX(2px);
     box-shadow: none;
+  }
+
+  .active-login-btn {
+    color: #1d4ed8 !important;
+    background: #eaf3ff !important;
+    box-shadow: none !important;
+    font-weight: 700;
+  }
+
+  .active-login-btn:hover {
+    color: #1d4ed8 !important;
+    background: #eaf3ff !important;
   }
 
   .btn-descargar {
