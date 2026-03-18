@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const SibApiV3Sdk = require("sib-api-v3-sdk");
+const bcrypt = require("bcryptjs");
 
 let otpStore = {};
 
@@ -24,7 +25,6 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    // ✅ Validar si el correo ya existe antes de enviar OTP
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -111,7 +111,6 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // ✅ Antes de crear, volver a validar que no exista ya
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -193,6 +192,73 @@ exports.googleRegister = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error del servidor al registrar con Google."
+    });
+  }
+};
+
+/* =========================
+   LOGIN NORMAL
+========================= */
+exports.login = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const password = (req.body.password || "").trim();
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "El correo y la contraseña son obligatorios."
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Ese correo no está registrado."
+      });
+    }
+
+    if (user.provider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "Este correo fue registrado con Google. Inicia sesión con Google."
+      });
+    }
+
+    const isPasswordCorrect = await user.comparePassword(password);
+
+    if (!isPasswordCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: "Contraseña incorrecta."
+      });
+    }
+
+    const storedPassword = (user.password || "").trim();
+    const looksHashed =
+      storedPassword.startsWith("$2a$") ||
+      storedPassword.startsWith("$2b$") ||
+      storedPassword.startsWith("$2y$");
+
+    if (!looksHashed && storedPassword === password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(password, salt);
+      await user.save();
+    }
+
+    return res.json({
+      success: true,
+      message: "Inicio de sesión correcto.",
+      user
+    });
+  } catch (error) {
+    console.error("Error en login:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al iniciar sesión."
     });
   }
 };
