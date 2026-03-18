@@ -43,33 +43,28 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre("save", async function (next) {
-  try {
-    if (!this.isModified("password")) {
-      return next();
-    }
-
-    if (!this.password || !this.password.trim()) {
-      return next();
-    }
-
-    const storedPassword = this.password.trim();
-
-    const looksHashed =
-      storedPassword.startsWith("$2a$") ||
-      storedPassword.startsWith("$2b$") ||
-      storedPassword.startsWith("$2y$");
-
-    if (looksHashed) {
-      return next();
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(storedPassword, salt);
-    next();
-  } catch (error) {
-    next(error);
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) {
+    return;
   }
+
+  if (!this.password || !this.password.trim()) {
+    return;
+  }
+
+  const storedPassword = this.password.trim();
+
+  const looksHashed =
+    storedPassword.startsWith("$2a$") ||
+    storedPassword.startsWith("$2b$") ||
+    storedPassword.startsWith("$2y$");
+
+  if (looksHashed) {
+    return;
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(storedPassword, salt);
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
