@@ -43,16 +43,12 @@ const Login = () => {
 
   useEffect(() => {
     const token = localStorage.getItem(SESSION_KEY);
-
-    if (token) {
-      navigate('/');
-    }
+    if (token) navigate('/');
   }, [navigate]);
 
   const handleChange = (e) => {
     clearUX();
     const { name, value, type, checked } = e.target;
-
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -60,8 +56,6 @@ const Login = () => {
   };
 
   const handleForgotPassword = () => {
-    clearUX();
-
     const email = normalizeEmail(formData.email);
 
     if (!email) {
@@ -83,7 +77,7 @@ const Login = () => {
     clearUX();
 
     const email = normalizeEmail(formData.email);
-    const password = formData.password;
+    const password = formData.password || '';
 
     if (!email || !password) {
       setMsg({ type: 'err', text: 'Completa correo y contraseña.' });
@@ -123,7 +117,6 @@ const Login = () => {
         navigate('/');
       }, 700);
     } catch (error) {
-      console.error('Error en login:', error);
       setMsg({
         type: 'err',
         text: error.message || 'No se pudo iniciar sesión.'
@@ -163,7 +156,6 @@ const Login = () => {
 
       if (response.ok && data.success) {
         setSession(data.user || googleUser, true);
-
         setMsg({
           type: 'ok',
           text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
@@ -183,7 +175,6 @@ const Login = () => {
         backendMessage.toLowerCase().includes('ya esta registrado')
       ) {
         setSession(googleUser, true);
-
         setMsg({
           type: 'ok',
           text: `Inicio de sesión con Google exitoso. Bienvenido, ${googleUser.fullName}.`
@@ -198,7 +189,6 @@ const Login = () => {
 
       throw new Error(backendMessage || 'No se pudo iniciar sesión con Google.');
     } catch (error) {
-      console.error('Error al procesar inicio con Google:', error);
       setMsg({
         type: 'err',
         text: error.message || 'No se pudo iniciar sesión con Google.'
