@@ -87,6 +87,13 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
+    if (!password || !password.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "La contraseña es obligatoria."
+      });
+    }
+
     const savedOtpData = otpStore[email];
 
     if (!savedOtpData) {
@@ -123,11 +130,14 @@ exports.verifyOtp = async (req, res) => {
 
     delete otpStore[email];
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password.trim(), salt);
+
     const user = new User({
       fullName: fullName || "",
       email,
       phone: phone || "",
-      password: password || "",
+      password: hashedPassword,
       verified: true,
       provider: "local"
     });
@@ -144,7 +154,7 @@ exports.verifyOtp = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Error del servidor"
+      message: error.message || "Error del servidor"
     });
   }
 };
@@ -191,7 +201,7 @@ exports.googleRegister = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Error del servidor al registrar con Google."
+      message: error.message || "Error del servidor al registrar con Google."
     });
   }
 };
@@ -244,7 +254,16 @@ exports.login = async (req, res) => {
     let isPasswordCorrect = false;
 
     if (looksHashed) {
-      isPasswordCorrect = await user.comparePassword(password);
+      if (typeof user.comparePassword === "function") {
+        try {
+          isPasswordCorrect = await user.comparePassword(password);
+        } catch (compareError) {
+          console.error("Error usando comparePassword:", compareError);
+          isPasswordCorrect = await bcrypt.compare(password, storedPassword);
+        }
+      } else {
+        isPasswordCorrect = await bcrypt.compare(password, storedPassword);
+      }
     } else {
       isPasswordCorrect = storedPassword === password;
 
@@ -272,7 +291,7 @@ exports.login = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Error del servidor al iniciar sesión."
+      message: error.message || "Error del servidor al iniciar sesión."
     });
   }
 };
