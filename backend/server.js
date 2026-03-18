@@ -64,7 +64,11 @@ const normalizeState = (value = "") => {
   const clean = value.toUpperCase().trim();
 
   if (clean === "CDMX") return "CDMX";
-  if (clean === "EDOMEX" || clean === "ESTADO DE MEXICO" || clean === "ESTADO DE MÉXICO") {
+  if (
+    clean === "EDOMEX" ||
+    clean === "ESTADO DE MEXICO" ||
+    clean === "ESTADO DE MÉXICO"
+  ) {
     return "EDOMEX";
   }
 
@@ -276,6 +280,169 @@ app.post("/api/vehicles", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error del servidor al registrar el vehículo."
+    });
+  }
+});
+
+/* =========================
+   VER VEHÍCULOS
+========================= */
+
+app.get("/api/vehicles", async (req, res) => {
+  try {
+    const vehicles = await Vehicle.find().sort({ createdAt: -1 });
+
+    return res.json({
+      success: true,
+      vehicles
+    });
+  } catch (error) {
+    console.error("Error obteniendo vehículos:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al obtener los vehículos."
+    });
+  }
+});
+
+/* =========================
+   VER UN VEHÍCULO POR ID
+========================= */
+
+app.get("/api/vehicles/:id", async (req, res) => {
+  try {
+    const vehicle = await Vehicle.findById(req.params.id);
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "Vehículo no encontrado."
+      });
+    }
+
+    return res.json({
+      success: true,
+      vehicle
+    });
+  } catch (error) {
+    console.error("Error obteniendo vehículo por ID:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al obtener el vehículo."
+    });
+  }
+});
+
+/* =========================
+   EDITAR VEHÍCULO
+========================= */
+
+app.put("/api/vehicles/:id", async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+    const maxModelYear = currentYear + 2;
+
+    const entidad = normalizeState(req.body.entidad || "");
+    const placa = normalizePlate(req.body.placa || "");
+    const placaNormalizada = normalizeRawPlate(req.body.placa || "");
+    const modelo = Number(req.body.modelo);
+    const holograma = String(req.body.holograma || "").trim();
+
+    if (!entidad) {
+      return res.status(400).json({
+        message: "Selecciona una entidad válida."
+      });
+    }
+
+    if (!placa || !isValidPlateFormatByState(placa, entidad)) {
+      return res.status(400).json({
+        message:
+          entidad === "CDMX"
+            ? "La placa no coincide con un formato válido de CDMX."
+            : "La placa no coincide con un formato válido del Estado de México."
+      });
+    }
+
+    if (!Number.isFinite(modelo) || modelo < 1950 || modelo > maxModelYear) {
+      return res.status(400).json({
+        message: `El modelo debe estar entre 1950 y ${maxModelYear}.`
+      });
+    }
+
+    if (!["00", "0", "1", "2"].includes(holograma)) {
+      return res.status(400).json({
+        message: "Selecciona un holograma válido."
+      });
+    }
+
+    const vehicle = await Vehicle.findById(req.params.id);
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "Vehículo no encontrado."
+      });
+    }
+
+    const existingVehicle = await Vehicle.findOne({
+      entidad,
+      placaNormalizada,
+      _id: { $ne: req.params.id }
+    });
+
+    if (existingVehicle) {
+      return res.status(409).json({
+        success: false,
+        message: "Ya existe otro vehículo con esa placa en esa entidad."
+      });
+    }
+
+    vehicle.entidad = entidad;
+    vehicle.placa = placa;
+    vehicle.placaNormalizada = placaNormalizada;
+    vehicle.modelo = modelo;
+    vehicle.holograma = holograma;
+
+    await vehicle.save();
+
+    return res.json({
+      success: true,
+      message: "Vehículo actualizado correctamente.",
+      vehicle
+    });
+  } catch (error) {
+    console.error("Error actualizando vehículo:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al actualizar el vehículo."
+    });
+  }
+});
+
+/* =========================
+   ELIMINAR VEHÍCULO
+========================= */
+
+app.delete("/api/vehicles/:id", async (req, res) => {
+  try {
+    const vehicle = await Vehicle.findByIdAndDelete(req.params.id);
+
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: "Vehículo no encontrado."
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Vehículo eliminado correctamente."
+    });
+  } catch (error) {
+    console.error("Error eliminando vehículo:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor al eliminar el vehículo."
     });
   }
 });
