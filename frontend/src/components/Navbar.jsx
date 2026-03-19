@@ -8,20 +8,14 @@ const Navbar = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // ✅ estado de sesión
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // ✅ datos usuario
   const [sessionUser, setSessionUser] = useState(null);
-
-  // ✅ dropdown usuario
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
   const userMenuRef = useRef(null);
 
-  // ✅ refrescar estado de auth
   const refreshAuth = () => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('session_user');
@@ -40,12 +34,10 @@ const Navbar = () => {
     setIsUserDropdownOpen(false);
   }, [location]);
 
-  // ✅ checar auth al cargar y cuando cambie la ruta
   useEffect(() => {
     refreshAuth();
   }, [location]);
 
-  // ✅ escuchar evento custom
   useEffect(() => {
     const onAuthChanged = () => refreshAuth();
     window.addEventListener('auth-changed', onAuthChanged);
@@ -73,7 +65,6 @@ const Navbar = () => {
     };
   }, []);
 
-  // ✅ cerrar dropdown al hacer clic afuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -86,15 +77,22 @@ const Navbar = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      alert('La instalación no está disponible en este dispositivo o navegador.');
+      return;
+    }
+
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setIsInstallable(false);
+
+    if (outcome === 'accepted') {
+      setIsInstallable(false);
+    }
+
     setDeferredPrompt(null);
     setIsMenuOpen(false);
   };
 
-  // ✅ logout
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('session_user');
@@ -110,20 +108,8 @@ const Navbar = () => {
     navigate('/');
   };
 
-  // ✅ helper para marcar links activos
   const isActiveRoute = (routes) => {
     return routes.includes(location.pathname);
-  };
-
-  const isVehiculosActive = () => {
-    return [
-      '/registro',
-      '/vehiculos',
-      '/mis-vehiculos',
-      '/registrar-vehiculo',
-      '/editar-vehiculo',
-      '/eliminar-vehiculo'
-    ].includes(location.pathname);
   };
 
   const getUserInitial = () => {
@@ -202,24 +188,6 @@ const Navbar = () => {
           <>
             <li>
               <Link
-                to="/registro"
-                className={`nav-link-pill ${isVehiculosActive() ? 'active-nav-link' : ''}`}
-              >
-                Vehículos
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                to="/perfil"
-                className={`nav-link-pill ${isActiveRoute(['/perfil']) ? 'active-nav-link' : ''}`}
-              >
-                Mi Perfil
-              </Link>
-            </li>
-
-            <li>
-              <Link
                 to="/admin"
                 className={`nav-link-pill admin-link ${isActiveRoute(['/admin']) ? 'active-nav-link' : ''}`}
               >
@@ -229,13 +197,11 @@ const Navbar = () => {
           </>
         )}
 
-        {isInstallable && (
-          <li>
-            <button onClick={handleInstallClick} className="btn-descargar" type="button">
-              ⬇️ App
-            </button>
-          </li>
-        )}
+        <li>
+          <button onClick={handleInstallClick} className="btn-descargar" type="button">
+            ⬇️ App
+          </button>
+        </li>
 
         {isLoggedIn && (
           <>
@@ -296,7 +262,10 @@ const Navbar = () => {
                   <Link
                     to="/perfil"
                     className="navbar-user-dropdown-item"
-                    onClick={() => setIsUserDropdownOpen(false)}
+                    onClick={() => {
+                      setIsUserDropdownOpen(false);
+                      setIsMenuOpen(false);
+                    }}
                   >
                     Mi perfil
                   </Link>
@@ -304,7 +273,10 @@ const Navbar = () => {
                   <Link
                     to="/registro"
                     className="navbar-user-dropdown-item"
-                    onClick={() => setIsUserDropdownOpen(false)}
+                    onClick={() => {
+                      setIsUserDropdownOpen(false);
+                      setIsMenuOpen(false);
+                    }}
                   >
                     Mis vehículos
                   </Link>
@@ -318,12 +290,6 @@ const Navbar = () => {
                   </button>
                 </div>
               )}
-            </li>
-
-            <li>
-              <button onClick={handleLogout} className="login-btn" type="button">
-                Salir
-              </button>
             </li>
           </>
         )}

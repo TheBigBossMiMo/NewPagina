@@ -3,6 +3,7 @@ const SibApiV3Sdk = require("sib-api-v3-sdk");
 const bcrypt = require("bcryptjs");
 
 let otpStore = {};
+let resetOtpStore = {};
 
 const OTP_EXPIRATION_MS = 5 * 60 * 1000; // 5 minutos
 
@@ -292,6 +293,145 @@ exports.login = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Error del servidor al iniciar sesión."
+    });
+  }
+};
+
+/* =========================
+   FORGOT PASSWORD
+========================= */
+exports.forgotPassword = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "El correo es obligatorio."
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Cuenta no encontrada."
+      });
+    }
+
+    if (user.provider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "Esta cuenta fue registrada con Google. Inicia sesión con Google."
+      });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    resetOtpStore[email] = {
+      code: otp,
+      expiresAt: Date.now() + OTP_EXPIRATION_MS
+    };
+
+    await tranEmailApi.sendTransacEmail({
+      sender: {
+        name: "Hoy No Circula",
+        email: "soporte.hoynocircula@gmail.com"
+      },
+      to: [{ email }],
+      subject: "Recuperación de contraseña",
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2>Recuperación de contraseña</h2>
+          <p>Tu código de recuperación es:</p>
+          <h1 style="letter-spacing: 4px;">${otp}</h1>
+          <p>Este código expira en 5 minutos.</p>
+        </div>
+      `
+    });
+
+    return res.json({
+      success: true,
+      message: "Código de recuperación enviado correctamente."
+    });
+  } catch (error) {
+    console.error("Error en forgotPassword:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error del servidor al enviar el código."
+    });
+  }
+};
+
+/* =========================
+   RESET PASSWORD
+========================= */
+exports.resetPassword = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const otp = String(req.body.otp || "").trim();
+    const newPassword = String(req.body.newPassword || "").trim();
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Completa correo, código y nueva contraseña."
+      });
+    }
+
+    const savedOtpData = resetOtpStore[email];
+
+    if (!savedOtpData) {
+      return res.status(400).json({
+        success: false,
+        message: "No hay un código activo para este correo. Solicita uno nuevo."
+      });
+    }
+
+    if (Date.now() > savedOtpData.expiresAt) {
+      delete resetOtpStore[email];
+      return res.status(400).json({
+        success: false,
+        message: "El código ha expirado. Solicita uno nuevo."
+      });
+    }
+
+    if (savedOtpData.code !== otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Código incorrecto."
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      delete resetOtpStore[email];
+      return res.status(404).json({
+        success: false,
+        message: "Cuenta no encontrada."
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    await user.save();
+
+    delete resetOtpStore[email];
+
+    return res.json({
+      success: true,
+      message: "Contraseña actualizada correctamente."
+    });
+  } catch (error) {
+    console.error("Error en resetPassword:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Error del servidor al actualizar la contraseña."
     });
   }
 };
