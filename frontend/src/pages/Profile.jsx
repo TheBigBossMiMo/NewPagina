@@ -11,9 +11,17 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
 
-  const sessionUserRaw = localStorage.getItem("session_user");
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: ''
+  });
+
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const sessionUserRaw = localStorage.getItem('session_user');
   const sessionUser = sessionUserRaw ? JSON.parse(sessionUserRaw) : null;
-  const email = sessionUser?.email || "";
+  const email = sessionUser?.email || '';
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -22,26 +30,26 @@ const Profile = () => {
         setMsg(null);
 
         if (!email) {
-          throw new Error("No hay sesión activa.");
+          throw new Error('No hay sesión activa.');
         }
 
         if (!API_URL) {
-          throw new Error("No se encontró VITE_API_URL.");
+          throw new Error('No se encontró VITE_API_URL.');
         }
 
         const res = await fetch(`${API_URL}/profile?email=${encodeURIComponent(email)}`);
         const data = await res.json();
 
         if (!res.ok || !data.success) {
-          throw new Error(data.message || "No se pudo cargar el perfil.");
+          throw new Error(data.message || 'No se pudo cargar el perfil.');
         }
 
         setUserData(data.user);
       } catch (error) {
-        console.error("Error cargando perfil:", error);
+        console.error('Error cargando perfil:', error);
         setMsg({
-          type: "err",
-          text: error.message || "Error cargando perfil."
+          type: 'err',
+          text: error.message || 'Error cargando perfil.'
         });
       } finally {
         setLoading(false);
@@ -50,6 +58,21 @@ const Profile = () => {
 
     fetchProfile();
   }, [email]);
+
+  const updateSessionUser = (updatedUser) => {
+    const updatedSessionUser = {
+      ...sessionUser,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      picture: updatedUser.picture,
+      provider: updatedUser.provider,
+      notificaciones: updatedUser.notificaciones
+    };
+
+    localStorage.setItem('session_user', JSON.stringify(updatedSessionUser));
+    window.dispatchEvent(new Event('auth-changed'));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -67,7 +90,9 @@ const Profile = () => {
   };
 
   const handleCancel = () => {
-    setUserData(originalData);
+    if (originalData) {
+      setUserData(originalData);
+    }
     setIsEditing(false);
     setMsg(null);
   };
@@ -80,9 +105,9 @@ const Profile = () => {
       setMsg(null);
 
       const res = await fetch(`${API_URL}/profile`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json"
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           email: userData.email,
@@ -95,54 +120,156 @@ const Profile = () => {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.message || "No se pudo actualizar el perfil.");
+        throw new Error(data.message || 'No se pudo actualizar el perfil.');
       }
 
       setUserData(data.user);
-
-      const updatedSessionUser = {
-        ...sessionUser,
-        fullName: data.user.fullName,
-        email: data.user.email,
-        phone: data.user.phone,
-        picture: data.user.picture,
-        provider: data.user.provider,
-        notificaciones: data.user.notificaciones
-      };
-
-      localStorage.setItem("session_user", JSON.stringify(updatedSessionUser));
-      window.dispatchEvent(new Event("auth-changed"));
+      updateSessionUser(data.user);
 
       setIsEditing(false);
       setMsg({
-        type: "ok",
-        text: "Perfil actualizado correctamente."
+        type: 'ok',
+        text: 'Perfil actualizado correctamente.'
       });
     } catch (error) {
-      console.error("Error actualizando perfil:", error);
+      console.error('Error actualizando perfil:', error);
       setMsg({
-        type: "err",
-        text: error.message || "Error actualizando perfil."
+        type: 'err',
+        text: error.message || 'Error actualizando perfil.'
       });
     } finally {
       setSaving(false);
     }
   };
 
+  const handlePasswordInputChange = (e) => {
+    const { name, value } = e.target;
+
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
+    try {
+      setChangingPassword(true);
+      setMsg(null);
+
+      const res = await fetch(`${API_URL}/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || 'No se pudo cambiar la contraseña.');
+      }
+
+      setPasswordData({
+        currentPassword: '',
+        newPassword: ''
+      });
+
+      setMsg({
+        type: 'ok',
+        text: 'Contraseña actualizada correctamente.'
+      });
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
+      setMsg({
+        type: 'err',
+        text: error.message || 'Error cambiando contraseña.'
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) return;
+
+    try {
+      setUploadingImage(true);
+      setMsg(null);
+
+      const reader = new FileReader();
+
+      reader.onloadend = async () => {
+        try {
+          const res = await fetch(`${API_URL}/profile-image`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email,
+              picture: reader.result
+            })
+          });
+
+          const data = await res.json();
+
+          if (!res.ok || !data.success) {
+            throw new Error(data.message || 'No se pudo actualizar la foto.');
+          }
+
+          setUserData(data.user);
+          updateSessionUser(data.user);
+
+          setMsg({
+            type: 'ok',
+            text: 'Foto actualizada correctamente.'
+          });
+        } catch (error) {
+          console.error('Error actualizando foto:', error);
+          setMsg({
+            type: 'err',
+            text: error.message || 'Error actualizando foto.'
+          });
+        } finally {
+          setUploadingImage(false);
+          e.target.value = '';
+        }
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error leyendo imagen:', error);
+      setUploadingImage(false);
+      setMsg({
+        type: 'err',
+        text: 'No se pudo procesar la imagen.'
+      });
+    }
+  };
+
   const getInitial = () => {
-    return (userData?.fullName || userData?.email || "U").charAt(0).toUpperCase();
+    return (userData?.fullName || userData?.email || 'U').charAt(0).toUpperCase();
   };
 
   const getProviderLabel = () => {
-    return userData?.provider === "google" ? "Google" : "Local";
+    return userData?.provider === 'google' ? 'Google' : 'Local';
   };
 
   if (loading) {
-    return <p style={{ textAlign: "center", marginTop: "2rem" }}>Cargando perfil...</p>;
+    return <p style={{ textAlign: 'center', marginTop: '2rem' }}>Cargando perfil...</p>;
   }
 
   if (!userData) {
-    return <p style={{ textAlign: "center", marginTop: "2rem" }}>No se pudo cargar el perfil.</p>;
+    return <p style={{ textAlign: 'center', marginTop: '2rem' }}>No se pudo cargar el perfil.</p>;
   }
 
   return (
@@ -158,6 +285,21 @@ const Profile = () => {
                   <span>{getInitial()}</span>
                 )}
               </div>
+
+              {userData.provider !== 'google' && (
+                <div className="profile-avatar-upload">
+                  <label className="profile-upload-btn">
+                    {uploadingImage ? 'Subiendo...' : 'Cambiar foto'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      hidden
+                    />
+                  </label>
+                </div>
+              )}
             </div>
 
             <div className="profile-hero-info">
@@ -173,12 +315,12 @@ const Profile = () => {
 
                 <div className="mini-stat">
                   <span className="mini-stat-label">Teléfono</span>
-                  <strong>{userData.phone || "No registrado"}</strong>
+                  <strong>{userData.phone || 'No registrado'}</strong>
                 </div>
 
                 <div className="mini-stat">
                   <span className="mini-stat-label">Alertas</span>
-                  <strong>{userData.notificaciones ? "Activadas" : "Desactivadas"}</strong>
+                  <strong>{userData.notificaciones ? 'Activadas' : 'Desactivadas'}</strong>
                 </div>
               </div>
             </div>
@@ -195,7 +337,7 @@ const Profile = () => {
             </div>
 
             {msg && (
-              <div className={`profile-message ${msg.type === "err" ? "error" : "success"}`}>
+              <div className={`profile-message ${msg.type === 'err' ? 'error' : 'success'}`}>
                 {msg.text}
               </div>
             )}
@@ -207,7 +349,7 @@ const Profile = () => {
                   <input
                     type="text"
                     name="fullName"
-                    value={userData.fullName || ""}
+                    value={userData.fullName || ''}
                     onChange={handleChange}
                     disabled={!isEditing}
                   />
@@ -217,7 +359,7 @@ const Profile = () => {
                   <label>Correo</label>
                   <input
                     type="email"
-                    value={userData.email || ""}
+                    value={userData.email || ''}
                     disabled
                   />
                 </div>
@@ -227,7 +369,7 @@ const Profile = () => {
                   <input
                     type="tel"
                     name="phone"
-                    value={userData.phone || ""}
+                    value={userData.phone || ''}
                     onChange={handleChange}
                     disabled={!isEditing}
                     placeholder="Ej. 5512345678"
@@ -272,12 +414,55 @@ const Profile = () => {
                       Cancelar
                     </button>
                     <button type="submit" className="btn-save" disabled={saving}>
-                      {saving ? "Guardando..." : "💾 Guardar cambios"}
+                      {saving ? 'Guardando...' : '💾 Guardar cambios'}
                     </button>
                   </>
                 )}
               </div>
             </form>
+
+            {userData.provider !== 'google' && (
+              <form onSubmit={handleChangePassword} className="profile-password-card">
+                <div className="profile-password-head">
+                  <h3>Seguridad</h3>
+                  <p>Cambia tu contraseña de acceso.</p>
+                </div>
+
+                <div className="profile-password-grid">
+                  <div className="form-group">
+                    <label>Contraseña actual</label>
+                    <input
+                      type="password"
+                      name="currentPassword"
+                      value={passwordData.currentPassword}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Ingresa tu contraseña actual"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Nueva contraseña</label>
+                    <input
+                      type="password"
+                      name="newPassword"
+                      value={passwordData.newPassword}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Mínimo 8 caracteres"
+                    />
+                  </div>
+                </div>
+
+                <div className="profile-password-actions">
+                  <button
+                    type="submit"
+                    className="btn-password"
+                    disabled={changingPassword}
+                  >
+                    {changingPassword ? 'Actualizando...' : '🔒 Cambiar contraseña'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </section>
       </div>
