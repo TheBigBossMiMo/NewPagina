@@ -49,6 +49,7 @@
 .navbar-links li {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .navbar-links a {
