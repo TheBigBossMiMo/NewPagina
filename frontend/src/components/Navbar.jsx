@@ -47,21 +47,35 @@ const Navbar = () => {
   useEffect(() => {
     const handleBeforeInstallPrompt = (e) => {
       e.preventDefault();
+      window.deferredPromptEvent = e;
       setDeferredPrompt(e);
       setIsInstallable(true);
     };
 
     const handleAppInstalled = () => {
+      window.deferredPromptEvent = null;
       setIsInstallable(false);
       setDeferredPrompt(null);
     };
 
+    const syncInstallState = () => {
+      const promptEvent = window.deferredPromptEvent || null;
+      setDeferredPrompt(promptEvent);
+      setIsInstallable(!!promptEvent);
+    };
+
+    syncInstallState();
+
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener('pwa-install-ready', syncInstallState);
+    window.addEventListener('pwa-installed', syncInstallState);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener('pwa-install-ready', syncInstallState);
+      window.removeEventListener('pwa-installed', syncInstallState);
     };
   }, []);
 
@@ -77,20 +91,28 @@ const Navbar = () => {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      alert('La instalación no está disponible en este dispositivo o navegador.');
+    const promptEvent = deferredPrompt || window.deferredPromptEvent || null;
+
+    if (!promptEvent) {
+      alert('La instalación aún no está disponible. Recarga la página e inténtalo de nuevo.');
       return;
     }
 
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    try {
+      await promptEvent.prompt();
+      const { outcome } = await promptEvent.userChoice;
 
-    if (outcome === 'accepted') {
-      setIsInstallable(false);
+      if (outcome === 'accepted') {
+        setIsInstallable(false);
+      }
+
+      window.deferredPromptEvent = null;
+      setDeferredPrompt(null);
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error('Error al intentar instalar la app:', error);
+      alert('No fue posible abrir la instalación de la app.');
     }
-
-    setDeferredPrompt(null);
-    setIsMenuOpen(false);
   };
 
   const handleLogout = () => {

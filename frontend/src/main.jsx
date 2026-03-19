@@ -6,15 +6,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google"
 
 const CLIENT_ID = "1006853668173-75eaio89vlrratui45tiq2hsqu3q9rmk.apps.googleusercontent.com"
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <GoogleOAuthProvider clientId={CLIENT_ID}>
-      <App />
-    </GoogleOAuthProvider>
-  </StrictMode>,
-)
-
-// 👇 AÑADE ESTO (no quites nada de arriba)
+// ✅ registrar service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
@@ -27,3 +19,25 @@ if ('serviceWorker' in navigator) {
       });
   });
 }
+
+// ✅ capturar instalación PWA globalmente
+window.deferredPromptEvent = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  window.deferredPromptEvent = e;
+  window.dispatchEvent(new Event('pwa-install-ready'));
+});
+
+window.addEventListener('appinstalled', () => {
+  window.deferredPromptEvent = null;
+  window.dispatchEvent(new Event('pwa-installed'));
+});
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <GoogleOAuthProvider clientId={CLIENT_ID}>
+      <App />
+    </GoogleOAuthProvider>
+  </StrictMode>,
+)
