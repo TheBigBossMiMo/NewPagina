@@ -15,6 +15,7 @@
 .navbar-brand {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .navbar-brand a {
@@ -58,6 +59,7 @@
   border-radius: 10px;
   transition: all 0.25s ease;
   position: relative;
+  white-space: nowrap;
 }
 
 .navbar-links a:hover {
@@ -71,7 +73,6 @@
   transform: scale(0.97);
 }
 
-/* ✅ ENLACE ACTIVO */
 .active-nav-link {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.12);
@@ -85,7 +86,6 @@
   box-shadow: 0 0 16px rgba(255, 255, 255, 0.14);
 }
 
-/* ✅ BOTÓN LOGIN */
 .login-btn {
   color: #d6dde5 !important;
   text-decoration: none;
@@ -97,6 +97,7 @@
   background: transparent;
   cursor: pointer;
   box-shadow: none;
+  white-space: nowrap;
 }
 
 .login-btn:hover {
@@ -106,7 +107,6 @@
   transform: translateY(-1px);
 }
 
-/* ✅ LOGIN ACTIVO */
 .active-login-btn {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.12);
@@ -119,7 +119,6 @@
   background: rgba(255, 255, 255, 0.14);
 }
 
-/* ✅ APP */
 .btn-descargar {
   background: linear-gradient(135deg, #ffd54f 0%, #ffc107 100%);
   color: #000;
@@ -129,6 +128,7 @@
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.25s ease;
+  white-space: nowrap;
 }
 
 .btn-descargar:hover {
@@ -137,7 +137,6 @@
   box-shadow: 0 8px 18px rgba(255, 193, 7, 0.28);
 }
 
-/* ✅ ICONO NOTIFICACIONES */
 .navbar-notification-item {
   margin-left: 0.15rem;
 }
@@ -165,7 +164,6 @@
   box-shadow: 0 0 14px rgba(255, 255, 255, 0.12);
 }
 
-/* ✅ USUARIO / AVATAR */
 .navbar-user-wrapper {
   position: relative;
   margin-left: 0.1rem;
@@ -209,7 +207,6 @@
   justify-content: center;
 }
 
-/* ✅ DROPDOWN */
 .navbar-user-dropdown {
   position: absolute;
   top: calc(100% + 12px);
@@ -325,7 +322,6 @@
   color: #dc2626 !important;
 }
 
-/* --- ESTILOS RESPONSIVOS NAVBAR --- */
 .mobile-menu-btn {
   display: none;
   background: rgba(255, 255, 255, 0.08);
@@ -340,6 +336,27 @@
 
 .mobile-menu-btn:hover {
   background: rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 1024px) {
+  .navbar {
+    padding: 0.85rem 1.2rem;
+  }
+
+  .navbar-logo {
+    height: 88px;
+  }
+
+  .navbar-links {
+    gap: 0.4rem;
+  }
+
+  .navbar-links a,
+  .login-btn,
+  .btn-descargar {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.94rem;
+  }
 }
 
 @media (max-width: 850px) {
@@ -365,7 +382,7 @@
     top: calc(100% + 8px);
     right: 0.8rem;
     left: auto;
-    width: min(300px, 88vw);
+    width: min(320px, 90vw);
     background: rgba(255, 255, 255, 0.98);
     flex-direction: column;
     align-items: stretch;
@@ -418,7 +435,6 @@
     box-shadow: none;
   }
 
-  /* ✅ ACTIVO EN MÓVIL */
   .active-nav-link {
     color: #1d4ed8 !important;
     background: #eaf3ff !important;
