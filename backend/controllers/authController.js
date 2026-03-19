@@ -472,7 +472,6 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-
 /* =========================
    UPDATE PROFILE
 ========================= */
@@ -526,7 +525,8 @@ exports.updateProfile = async (req, res) => {
 exports.changePasswordProfile = async (req, res) => {
   try {
     const email = normalizeEmail(req.body.email);
-    const { currentPassword, newPassword } = req.body;
+    const currentPassword = String(req.body.currentPassword || "").trim();
+    const newPassword = String(req.body.newPassword || "").trim();
 
     if (!email || !currentPassword || !newPassword) {
       return res.status(400).json({
@@ -535,15 +535,25 @@ exports.changePasswordProfile = async (req, res) => {
       });
     }
 
+    if (newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: "La nueva contraseña debe tener al menos 8 caracteres."
+      });
+    }
+
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+
+    if (!hasUppercase || !hasLowercase || !hasNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "La nueva contraseña debe incluir mayúscula, minúscula y número."
+      });
+    }
+
     const user = await User.findOne({ email });
-
-if (!email || !currentPassword || !newPassword) {
-  return res.status(400).json({
-    success: false,
-    message: "Datos incompletos."
-  });
-}
-
 
     if (!user) {
       return res.status(404).json({
@@ -559,12 +569,28 @@ if (!email || !currentPassword || !newPassword) {
       });
     }
 
+    if (!user.password) {
+      return res.status(400).json({
+        success: false,
+        message: "Este usuario no tiene contraseña configurada."
+      });
+    }
+
     const isMatch = await bcrypt.compare(currentPassword, user.password);
 
     if (!isMatch) {
       return res.status(400).json({
         success: false,
         message: "Contraseña actual incorrecta"
+      });
+    }
+
+    const samePassword = await bcrypt.compare(newPassword, user.password);
+
+    if (samePassword) {
+      return res.status(400).json({
+        success: false,
+        message: "La nueva contraseña no puede ser igual a la actual."
       });
     }
 
@@ -577,7 +603,6 @@ if (!email || !currentPassword || !newPassword) {
       success: true,
       message: "Contraseña actualizada correctamente"
     });
-
   } catch (error) {
     console.error("Error changePasswordProfile:", error);
     return res.status(500).json({
@@ -611,7 +636,6 @@ exports.updateProfileImage = async (req, res) => {
       });
     }
 
-    // SOLO cuentas locales pueden cambiar foto
     if (user.provider === "google") {
       return res.status(400).json({
         success: false,
@@ -628,7 +652,6 @@ exports.updateProfileImage = async (req, res) => {
       message: "Foto actualizada",
       user
     });
-
   } catch (error) {
     console.error("Error updateProfileImage:", error);
     return res.status(500).json({
