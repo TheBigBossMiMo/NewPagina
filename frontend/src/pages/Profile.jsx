@@ -1,21 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './Profile.css';
 
-const Profile = () => {
-  // Estado principal de los datos
-  const [userData, setUserData] = useState({
-    nombre: 'Gerardo R.', // Puse un nombre de ejemplo más real
-    correo: 'conductor@ejemplo.com',
-    telefono: '55 1234 5678',
-    notificaciones: true
-  });
+const API_URL = "http://localhost:3000/api/auth";
 
-  // Estado secundario para guardar el respaldo en caso de cancelar
+const Profile = () => {
+  const [userData, setUserData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  const sessionUser = JSON.parse(localStorage.getItem("session_user"));
+  const email = sessionUser?.email;
+
+  /* =========================
+     CARGAR PERFIL (GET)
+  ========================= */
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`${API_URL}/profile?email=${email}`);
+        const data = await res.json();
+
+        if (data.success) {
+          setUserData(data.user);
+        }
+      } catch (error) {
+        console.error("Error cargando perfil:", error);
+      }
+    };
+
+    if (email) fetchProfile();
+  }, [email]);
+
+  /* =========================
+     CAMBIOS INPUT
+  ========================= */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+
     setUserData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -23,109 +44,134 @@ const Profile = () => {
   };
 
   const handleEdit = () => {
-    // Guardamos una copia exacta de los datos antes de empezar a editar
     setOriginalData({ ...userData });
     setIsEditing(true);
   };
 
   const handleCancel = () => {
-    // Restauramos la copia de seguridad
     setUserData(originalData);
     setIsEditing(false);
   };
 
-  const handleSave = (e) => {
+  /* =========================
+     GUARDAR (PUT)
+  ========================= */
+  const handleSave = async (e) => {
     e.preventDefault();
-    setIsEditing(false);
-    // Aquí iría la petición PUT/PATCH al Backend (Sprint 2/3)
-    console.log('Actualizando perfil en BD:', userData);
-    alert('✅ ¡Perfil actualizado con éxito!');
+
+    try {
+      const res = await fetch(`${API_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email: userData.email,
+          fullName: userData.fullName,
+          phone: userData.phone,
+          notificaciones: userData.notificaciones
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setIsEditing(false);
+        alert("✅ Perfil actualizado correctamente");
+      }
+    } catch (error) {
+      console.error("Error actualizando perfil:", error);
+    }
   };
+
+  if (!userData) {
+    return <p style={{ textAlign: "center" }}>Cargando perfil...</p>;
+  }
 
   return (
     <div className="profile-container">
+
+      {/* HEADER */}
       <div className="profile-header">
-        <div className="profile-avatar">👨‍💻</div>
-        <h2>Mi Perfil</h2>
-        <p className="profile-subtitle">Gestiona tu información personal</p>
+
+        <div className="profile-avatar">
+          {userData.picture ? (
+            <img src={userData.picture} alt="avatar" className="profile-avatar-img" />
+          ) : (
+            userData.fullName?.charAt(0).toUpperCase()
+          )}
+        </div>
+
+        <h2>{userData.fullName}</h2>
+        <p className="profile-subtitle">{userData.email}</p>
       </div>
 
+      {/* CARD */}
       <div className="profile-card">
         <form onSubmit={handleSave} className="profile-form">
-          
+
           <div className="form-group">
-            <label htmlFor="nombre">Nombre Completo</label>
-            <input 
-              type="text" 
-              id="nombre" 
-              name="nombre" 
-              value={userData.nombre} 
-              onChange={handleChange} 
+            <label>Nombre</label>
+            <input
+              type="text"
+              name="fullName"
+              value={userData.fullName}
+              onChange={handleChange}
               disabled={!isEditing}
-              required 
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="correo">Correo Electrónico</label>
-            <input 
-              type="email" 
-              id="correo" 
-              name="correo" 
-              value={userData.correo} 
-              onChange={handleChange} 
+            <label>Correo</label>
+            <input value={userData.email} disabled />
+          </div>
+
+          <div className="form-group">
+            <label>Teléfono</label>
+            <input
+              type="tel"
+              name="phone"
+              value={userData.phone}
+              onChange={handleChange}
               disabled={!isEditing}
-              required 
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="telefono">Teléfono (WhatsApp)</label>
-            <input 
-              type="tel" 
-              id="telefono" 
-              name="telefono" 
-              value={userData.telefono} 
-              onChange={handleChange} 
-              disabled={!isEditing}
-              placeholder="Ej. 55 0000 0000"
-            />
+            <label>Tipo de cuenta</label>
+            <input value={userData.provider} disabled />
           </div>
 
           <div className="form-group checkbox-group">
             <label>
-              <input 
-                type="checkbox" 
-                name="notificaciones" 
-                checked={userData.notificaciones} 
-                onChange={handleChange} 
+              <input
+                type="checkbox"
+                name="notificaciones"
+                checked={userData.notificaciones}
+                onChange={handleChange}
                 disabled={!isEditing}
               />
-              Recibir alertas de Contingencia Ambiental
+              Recibir alertas de contingencia
             </label>
           </div>
 
           <div className="profile-actions">
             {!isEditing ? (
-              <button 
-                type="button" 
-                className="btn-edit" 
-                onClick={handleEdit}
-              >
-                ✏️ Editar Datos
+              <button type="button" className="btn-edit" onClick={handleEdit}>
+                ✏️ Editar
               </button>
             ) : (
               <>
                 <button type="button" className="btn-cancel" onClick={handleCancel}>
-                  ✖ Cancelar
+                  Cancelar
                 </button>
                 <button type="submit" className="btn-save">
-                  💾 Guardar Cambios
+                  💾 Guardar
                 </button>
               </>
             )}
           </div>
-          
+
         </form>
       </div>
     </div>

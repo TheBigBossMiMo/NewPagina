@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
     picture: {
       type: String,
       default: ""
+    },
+    notificaciones: {
+      type: Boolean,
+      default: true
     }
   },
   {

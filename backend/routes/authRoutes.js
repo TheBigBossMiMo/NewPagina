@@ -7,7 +7,10 @@ const {
   googleRegister,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  getProfile,
+  updateProfile
+
 } = require("../controllers/authController");
 
 router.post("/send-otp", sendOtp);
@@ -16,5 +19,8 @@ router.post("/google-register", googleRegister);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+
+router.get("/profile", getProfile);
+router.put("/profile", updateProfile);
 
 module.exports = router;
