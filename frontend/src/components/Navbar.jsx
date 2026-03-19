@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../assets/logo.png';
@@ -11,17 +11,33 @@ const Navbar = () => {
   // ✅ estado de sesión
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // ✅ datos usuario
+  const [sessionUser, setSessionUser] = useState(null);
+
+  // ✅ dropdown usuario
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+
   const location = useLocation();
   const navigate = useNavigate();
+  const userMenuRef = useRef(null);
 
   // ✅ refrescar estado de auth
   const refreshAuth = () => {
     const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('session_user');
+
     setIsLoggedIn(!!token);
+
+    try {
+      setSessionUser(storedUser ? JSON.parse(storedUser) : null);
+    } catch {
+      setSessionUser(null);
+    }
   };
 
   useEffect(() => {
     setIsMenuOpen(false);
+    setIsUserDropdownOpen(false);
   }, [location]);
 
   // ✅ checar auth al cargar y cuando cambie la ruta
@@ -57,6 +73,18 @@ const Navbar = () => {
     };
   }, []);
 
+  // ✅ cerrar dropdown al hacer clic afuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
@@ -69,8 +97,16 @@ const Navbar = () => {
   // ✅ logout
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('session_user');
+    localStorage.removeItem('google_user');
+    localStorage.removeItem('remember_me');
+
     setIsLoggedIn(false);
+    setSessionUser(null);
     setIsMenuOpen(false);
+    setIsUserDropdownOpen(false);
+
+    window.dispatchEvent(new Event('auth-changed'));
     navigate('/');
   };
 
@@ -88,6 +124,20 @@ const Navbar = () => {
       '/editar-vehiculo',
       '/eliminar-vehiculo'
     ].includes(location.pathname);
+  };
+
+  const getUserInitial = () => {
+    const name = sessionUser?.fullName || sessionUser?.email || 'U';
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getDisplayName = () => {
+    if (!sessionUser) return 'Usuario';
+    return sessionUser.fullName || sessionUser.email || 'Usuario';
+  };
+
+  const getDisplayEmail = () => {
+    return sessionUser?.email || 'Sin correo';
   };
 
   return (
@@ -188,11 +238,94 @@ const Navbar = () => {
         )}
 
         {isLoggedIn && (
-          <li>
-            <button onClick={handleLogout} className="login-btn" type="button">
-              Salir
-            </button>
-          </li>
+          <>
+            <li className="navbar-notification-item">
+              <button
+                type="button"
+                className="navbar-icon-btn"
+                aria-label="Notificaciones"
+                title="Notificaciones"
+              >
+                🔔
+              </button>
+            </li>
+
+            <li className="navbar-user-wrapper" ref={userMenuRef}>
+              <button
+                type="button"
+                className="navbar-user-btn"
+                onClick={() => setIsUserDropdownOpen((prev) => !prev)}
+                aria-label="Abrir menú de usuario"
+              >
+                {sessionUser?.picture ? (
+                  <img
+                    src={sessionUser.picture}
+                    alt={getDisplayName()}
+                    className="navbar-user-avatar"
+                  />
+                ) : (
+                  <div className="navbar-user-avatar navbar-user-fallback">
+                    {getUserInitial()}
+                  </div>
+                )}
+              </button>
+
+              {isUserDropdownOpen && (
+                <div className="navbar-user-dropdown">
+                  <div className="navbar-user-dropdown-header">
+                    {sessionUser?.picture ? (
+                      <img
+                        src={sessionUser.picture}
+                        alt={getDisplayName()}
+                        className="navbar-user-dropdown-avatar"
+                      />
+                    ) : (
+                      <div className="navbar-user-dropdown-avatar navbar-user-fallback">
+                        {getUserInitial()}
+                      </div>
+                    )}
+
+                    <div className="navbar-user-info">
+                      <strong>{getDisplayName()}</strong>
+                      <span>{getDisplayEmail()}</span>
+                    </div>
+                  </div>
+
+                  <div className="navbar-user-dropdown-divider" />
+
+                  <Link
+                    to="/perfil"
+                    className="navbar-user-dropdown-item"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                  >
+                    Mi perfil
+                  </Link>
+
+                  <Link
+                    to="/registro"
+                    className="navbar-user-dropdown-item"
+                    onClick={() => setIsUserDropdownOpen(false)}
+                  >
+                    Mis vehículos
+                  </Link>
+
+                  <button
+                    type="button"
+                    className="navbar-user-dropdown-item logout-item"
+                    onClick={handleLogout}
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </li>
+
+            <li>
+              <button onClick={handleLogout} className="login-btn" type="button">
+                Salir
+              </button>
+            </li>
+          </>
         )}
       </ul>
     </nav>
