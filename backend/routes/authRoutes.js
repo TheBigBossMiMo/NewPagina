@@ -9,8 +9,9 @@ const {
   forgotPassword,
   resetPassword,
   getProfile,
-  updateProfile
-
+  updateProfile,
+  changePasswordProfile,
+  updateProfileImage
 } = require("../controllers/authController");
 
 router.post("/send-otp", sendOtp);
@@ -22,5 +23,8 @@ router.post("/reset-password", resetPassword);
 
 router.get("/profile", getProfile);
 router.put("/profile", updateProfile);
+
+router.put("/change-password", changePasswordProfile);
+router.put("/profile-image", updateProfileImage);
 
 module.exports = router;

@@ -519,3 +519,121 @@ exports.updateProfile = async (req, res) => {
     });
   }
 };
+
+/* =========================
+   CHANGE PASSWORD (PROFILE)
+========================= */
+exports.changePasswordProfile = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const { currentPassword, newPassword } = req.body;
+
+    if (!email || !currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Datos incompletos."
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+if (!email || !currentPassword || !newPassword) {
+  return res.status(400).json({
+    success: false,
+    message: "Datos incompletos."
+  });
+}
+
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Usuario no encontrado"
+      });
+    }
+
+    if (user.provider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "Las cuentas de Google no pueden cambiar contraseña."
+      });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Contraseña actual incorrecta"
+      });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Contraseña actualizada correctamente"
+    });
+
+  } catch (error) {
+    console.error("Error changePasswordProfile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor"
+    });
+  }
+};
+
+/* =========================
+   UPDATE PROFILE IMAGE (LOCAL)
+========================= */
+exports.updateProfileImage = async (req, res) => {
+  try {
+    const email = normalizeEmail(req.body.email);
+    const { picture } = req.body;
+
+    if (!email || !picture) {
+      return res.status(400).json({
+        success: false,
+        message: "Datos incompletos"
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Usuario no encontrado"
+      });
+    }
+
+    // SOLO cuentas locales pueden cambiar foto
+    if (user.provider === "google") {
+      return res.status(400).json({
+        success: false,
+        message: "Las cuentas de Google usan su foto original"
+      });
+    }
+
+    user.picture = picture;
+
+    await user.save();
+
+    return res.json({
+      success: true,
+      message: "Foto actualizada",
+      user
+    });
+
+  } catch (error) {
+    console.error("Error updateProfileImage:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error del servidor"
+    });
+  }
+};
