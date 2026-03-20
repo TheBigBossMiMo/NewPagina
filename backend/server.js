@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const authRoutes = require("./routes/authRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const Vehicle = require("./models/Vehicle");
+const vehicleRoutes = require("./routes/vehicleRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -49,7 +50,7 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
-
+app.use("/api/vehicles", vehicleRoutes);
 
 
 /* =========================
@@ -543,4 +544,5 @@ app.get("/api/circula/:placa", async (req, res) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
+
 });
