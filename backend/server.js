@@ -4,6 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const Vehicle = require("./models/Vehicle");
 
 const app = express();
@@ -47,6 +48,9 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/notifications", notificationRoutes);
+
+
 
 /* =========================
    FUNCIONES AUXILIARES
