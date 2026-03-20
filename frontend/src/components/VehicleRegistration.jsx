@@ -13,6 +13,11 @@ const VehicleRegistration = () => {
   const currentYear = new Date().getFullYear();
   const maxModelYear = currentYear + MAX_FUTURE_MODEL_YEARS;
 
+  const sessionUserRaw = localStorage.getItem('session_user');
+  const sessionUser = sessionUserRaw ? JSON.parse(sessionUserRaw) : null;
+  const sessionEmail = sessionUser?.email || '';
+  const sessionFullName = sessionUser?.fullName || '';
+
   const [activeTab, setActiveTab] = useState('inicio');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -466,7 +471,14 @@ const VehicleRegistration = () => {
     try {
       setLoadingVehicles(true);
 
-      const response = await fetch(`${API_BASE}/api/vehicles`);
+      if (!sessionEmail) {
+        setVehicles([]);
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE}/api/vehicles?email=${encodeURIComponent(sessionEmail)}`
+      );
       const data = await response.json();
 
       if (!response.ok) {
@@ -555,7 +567,15 @@ const VehicleRegistration = () => {
     setSaving(true);
 
     try {
+      if (!sessionEmail) {
+        showToast('err', 'Debes iniciar sesión para registrar vehículos.');
+        setSaving(false);
+        return;
+      }
+
       const payload = {
+        email: sessionEmail,
+        fullName: sessionFullName,
         entidad: formData.entidad,
         placa: normalizePlate(formData.placa),
         modelo: Number(formData.modelo),
@@ -626,7 +646,14 @@ const VehicleRegistration = () => {
     setUpdatingVehicle(true);
 
     try {
+      if (!sessionEmail) {
+        showToast('err', 'Debes iniciar sesión para editar vehículos.');
+        setUpdatingVehicle(false);
+        return;
+      }
+
       const payload = {
+        email: sessionEmail,
         entidad: editFormData.entidad,
         placa: normalizePlate(editFormData.placa),
         modelo: Number(editFormData.modelo),
@@ -667,11 +694,19 @@ const VehicleRegistration = () => {
     if (!confirmed) return;
 
     try {
+      if (!sessionEmail) {
+        showToast('err', 'Debes iniciar sesión para eliminar vehículos.');
+        return;
+      }
+
       setDeletingVehicleId(vehicleId);
 
-      const response = await fetch(`${API_BASE}/api/vehicles/${vehicleId}`, {
-        method: 'DELETE'
-      });
+      const response = await fetch(
+        `${API_BASE}/api/vehicles/${vehicleId}?email=${encodeURIComponent(sessionEmail)}`,
+        {
+          method: 'DELETE'
+        }
+      );
 
       const data = await response.json();
 
