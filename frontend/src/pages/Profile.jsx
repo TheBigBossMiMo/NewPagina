@@ -9,11 +9,21 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState(null);
+
+  const [profileMsg, setProfileMsg] = useState(null);
+  const [passwordMsg, setPasswordMsg] = useState(null);
+
+  const [notifications, setNotifications] = useState([]);
+  const [activeTab, setActiveTab] = useState('personal');
 
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: ''
+  });
+
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false
   });
 
   const [changingPassword, setChangingPassword] = useState(false);
@@ -27,7 +37,7 @@ const Profile = () => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        setMsg(null);
+        setProfileMsg(null);
 
         if (!email) {
           throw new Error('No hay sesión activa.');
@@ -47,7 +57,7 @@ const Profile = () => {
         setUserData(data.user);
       } catch (error) {
         console.error('Error cargando perfil:', error);
-        setMsg({
+        setProfileMsg({
           type: 'err',
           text: error.message || 'Error cargando perfil.'
         });
@@ -56,7 +66,23 @@ const Profile = () => {
       }
     };
 
+    const fetchNotifications = async () => {
+      try {
+        if (!email || !API_URL) return;
+
+        const res = await fetch(`${API_URL}/notifications?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          setNotifications(data.notifications || []);
+        }
+      } catch (error) {
+        console.error('Error cargando notificaciones:', error);
+      }
+    };
+
     fetchProfile();
+    fetchNotifications();
   }, [email]);
 
   const updateSessionUser = (updatedUser) => {
@@ -86,7 +112,7 @@ const Profile = () => {
   const handleEdit = () => {
     setOriginalData({ ...userData });
     setIsEditing(true);
-    setMsg(null);
+    setProfileMsg(null);
   };
 
   const handleCancel = () => {
@@ -94,7 +120,7 @@ const Profile = () => {
       setUserData(originalData);
     }
     setIsEditing(false);
-    setMsg(null);
+    setProfileMsg(null);
   };
 
   const handleSave = async (e) => {
@@ -102,7 +128,7 @@ const Profile = () => {
 
     try {
       setSaving(true);
-      setMsg(null);
+      setProfileMsg(null);
 
       const res = await fetch(`${API_URL}/profile`, {
         method: 'PUT',
@@ -127,13 +153,13 @@ const Profile = () => {
       updateSessionUser(data.user);
 
       setIsEditing(false);
-      setMsg({
+      setProfileMsg({
         type: 'ok',
         text: 'Perfil actualizado correctamente.'
       });
     } catch (error) {
       console.error('Error actualizando perfil:', error);
-      setMsg({
+      setProfileMsg({
         type: 'err',
         text: error.message || 'Error actualizando perfil.'
       });
@@ -151,12 +177,31 @@ const Profile = () => {
     }));
   };
 
+  const togglePasswordVisibility = (field) => {
+    setShowPasswords((prev) => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      setPasswordMsg({
+        type: 'err',
+        text: 'Debes completar la contraseña actual y la nueva contraseña.'
+      });
+      return;
+    }
+
+    const confirmed = window.confirm('¿Estás seguro de que quieres cambiar tu contraseña?');
+
+    if (!confirmed) return;
+
     try {
       setChangingPassword(true);
-      setMsg(null);
+      setPasswordMsg(null);
 
       const res = await fetch(`${API_URL}/change-password`, {
         method: 'PUT',
@@ -181,13 +226,18 @@ const Profile = () => {
         newPassword: ''
       });
 
-      setMsg({
+      setShowPasswords({
+        currentPassword: false,
+        newPassword: false
+      });
+
+      setPasswordMsg({
         type: 'ok',
         text: 'Contraseña actualizada correctamente.'
       });
     } catch (error) {
       console.error('Error cambiando contraseña:', error);
-      setMsg({
+      setPasswordMsg({
         type: 'err',
         text: error.message || 'Error cambiando contraseña.'
       });
@@ -203,7 +253,7 @@ const Profile = () => {
 
     try {
       setUploadingImage(true);
-      setMsg(null);
+      setProfileMsg(null);
 
       const reader = new FileReader();
 
@@ -229,13 +279,13 @@ const Profile = () => {
           setUserData(data.user);
           updateSessionUser(data.user);
 
-          setMsg({
+          setProfileMsg({
             type: 'ok',
             text: 'Foto actualizada correctamente.'
           });
         } catch (error) {
           console.error('Error actualizando foto:', error);
-          setMsg({
+          setProfileMsg({
             type: 'err',
             text: error.message || 'Error actualizando foto.'
           });
@@ -249,7 +299,7 @@ const Profile = () => {
     } catch (error) {
       console.error('Error leyendo imagen:', error);
       setUploadingImage(false);
-      setMsg({
+      setProfileMsg({
         type: 'err',
         text: 'No se pudo procesar la imagen.'
       });
@@ -262,6 +312,21 @@ const Profile = () => {
 
   const getProviderLabel = () => {
     return userData?.provider === 'google' ? 'Google' : 'Local';
+  };
+
+  const getPhoneLabel = () => {
+    return userData?.phone ? userData.phone : 'No registrado';
+  };
+
+  const getNotificationsLabel = () => {
+    return userData?.notificaciones ? 'Activadas' : 'Desactivadas';
+  };
+
+  const getNotificationTypeLabel = (type) => {
+    if (type === 'contingencia') return 'Contingencia';
+    if (type === 'doble_hoy_no_circula') return 'Doble Hoy No Circula';
+    if (type === 'recordatorio') return 'Recordatorio';
+    return 'Notificación';
   };
 
   if (loading) {
@@ -304,165 +369,341 @@ const Profile = () => {
 
             <div className="profile-hero-info">
               <span className="profile-badge">Mi cuenta</span>
-              <h1>{userData.fullName}</h1>
+              <h1>{userData.fullName || 'Usuario'}</h1>
               <p>{userData.email}</p>
 
-              <div className="profile-mini-stats">
-                <div className="mini-stat">
-                  <span className="mini-stat-label">Tipo</span>
+              <div className="profile-hero-grid">
+                <div className="hero-info-card">
+                  <span>Tipo de cuenta</span>
                   <strong>{getProviderLabel()}</strong>
                 </div>
 
-                <div className="mini-stat">
-                  <span className="mini-stat-label">Teléfono</span>
-                  <strong>{userData.phone || 'No registrado'}</strong>
+                <div className="hero-info-card">
+                  <span>Correo principal</span>
+                  <strong>{userData.email}</strong>
                 </div>
 
-                <div className="mini-stat">
-                  <span className="mini-stat-label">Alertas</span>
-                  <strong>{userData.notificaciones ? 'Activadas' : 'Desactivadas'}</strong>
+                <div className="hero-info-card">
+                  <span>Teléfono</span>
+                  <strong>{getPhoneLabel()}</strong>
+                </div>
+
+                <div className="hero-info-card">
+                  <span>Notificaciones</span>
+                  <strong>{getNotificationsLabel()}</strong>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="profile-content">
-          <div className="profile-card profile-form-card">
-            <div className="profile-card-head">
-              <div>
-                <h2>Configuración personal</h2>
-                <p>Edita tu información básica y preferencias.</p>
-              </div>
-            </div>
+        <section className="profile-tabs-shell">
+          <div className="profile-tabs-nav">
+            <button
+              type="button"
+              className={`profile-tab-btn ${activeTab === 'personal' ? 'active' : ''}`}
+              onClick={() => setActiveTab('personal')}
+            >
+              Información personal
+            </button>
 
-            {msg && (
-              <div className={`profile-message ${msg.type === 'err' ? 'error' : 'success'}`}>
-                {msg.text}
+            <button
+              type="button"
+              className={`profile-tab-btn ${activeTab === 'summary' ? 'active' : ''}`}
+              onClick={() => setActiveTab('summary')}
+            >
+              Resumen de cuenta
+            </button>
+
+            <button
+              type="button"
+              className={`profile-tab-btn ${activeTab === 'preferences' ? 'active' : ''}`}
+              onClick={() => setActiveTab('preferences')}
+            >
+              Preferencias
+            </button>
+
+            <button
+              type="button"
+              className={`profile-tab-btn ${activeTab === 'security' ? 'active' : ''}`}
+              onClick={() => setActiveTab('security')}
+            >
+              Seguridad
+            </button>
+
+
+          </div>
+
+          <div className="profile-tab-panel">
+            {activeTab === 'personal' && (
+              <div className="profile-card profile-card-large">
+                <div className="profile-card-head">
+                  <div>
+                    <h2>Información personal</h2>
+                    <p>Edita tus datos básicos de cuenta sin afectar el acceso actual.</p>
+                  </div>
+                </div>
+
+                {profileMsg && (
+                  <div className={`profile-message ${profileMsg.type === 'err' ? 'error' : 'success'}`}>
+                    {profileMsg.text}
+                  </div>
+                )}
+
+                <form onSubmit={handleSave} className="profile-form">
+                  <div className="profile-form-grid">
+                    <div className="form-group">
+                      <label>Nombre completo</label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={userData.fullName || ''}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        placeholder="Ingresa tu nombre"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Correo electrónico</label>
+                      <input
+                        type="email"
+                        value={userData.email || ''}
+                        disabled
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Teléfono</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={userData.phone || ''}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        placeholder="Ej. 5512345678"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Tipo de cuenta</label>
+                      <input
+                        type="text"
+                        value={getProviderLabel()}
+                        disabled
+                      />
+                    </div>
+                  </div>
+
+                  <div className="profile-actions">
+                    {!isEditing ? (
+                      <button type="button" className="btn-edit" onClick={handleEdit}>
+                        ✏️ Editar perfil
+                      </button>
+                    ) : (
+                      <>
+                        <button type="button" className="btn-cancel" onClick={handleCancel}>
+                          Cancelar
+                        </button>
+                        <button type="submit" className="btn-save" disabled={saving}>
+                          {saving ? 'Guardando...' : '💾 Guardar cambios'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </form>
               </div>
             )}
 
-            <form onSubmit={handleSave} className="profile-form">
-              <div className="profile-form-grid">
-                <div className="form-group">
-                  <label>Nombre</label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={userData.fullName || ''}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
+            {activeTab === 'summary' && (
+              <div className="profile-card profile-summary-card">
+                <div className="profile-card-head">
+                  <div>
+                    <h2>Resumen de cuenta</h2>
+                    <p>Estado general de tu perfil dentro de la plataforma.</p>
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Correo</label>
-                  <input
-                    type="email"
-                    value={userData.email || ''}
-                    disabled
-                  />
-                </div>
+                <div className="profile-summary-grid">
+                  <div className="summary-item">
+                    <span>Estado</span>
+                    <strong>Cuenta activa</strong>
+                  </div>
 
-                <div className="form-group">
-                  <label>Teléfono</label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={userData.phone || ''}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="Ej. 5512345678"
-                  />
-                </div>
+                  <div className="summary-item">
+                    <span>Proveedor</span>
+                    <strong>{getProviderLabel()}</strong>
+                  </div>
 
-                <div className="form-group">
-                  <label>Tipo de cuenta</label>
-                  <input
-                    value={getProviderLabel()}
-                    disabled
-                  />
+                  <div className="summary-item">
+                    <span>Foto de perfil</span>
+                    <strong>{userData.picture ? 'Personalizada' : 'Inicial automática'}</strong>
+                  </div>
+
+                  <div className="summary-item">
+                    <span>Alertas</span>
+                    <strong>{getNotificationsLabel()}</strong>
+                  </div>
+
+                  <div className="summary-item">
+                    <span>Correo principal</span>
+                    <strong>{userData.email}</strong>
+                  </div>
+
+                  <div className="summary-item">
+                    <span>Teléfono</span>
+                    <strong>{getPhoneLabel()}</strong>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div className="profile-toggle-card">
-                <div>
-                  <h3>Notificaciones</h3>
-                  <p>Recibe alertas relacionadas con contingencia ambiental.</p>
+            {activeTab === 'preferences' && (
+              <div className="profile-card">
+                <div className="profile-card-head">
+                  <div>
+                    <h2>Preferencias de notificación</h2>
+                    <p>
+                      Aquí controlaremos las alertas de contingencia, doble hoy no circula
+                      y recordatorios generales. Los recordatorios del vehículo los moveremos a la pestaña
+                      de vehículo cuando terminemos esa parte.
+                    </p>
+                  </div>
                 </div>
 
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    name="notificaciones"
-                    checked={!!userData.notificaciones}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                  />
-                  <span className="slider"></span>
-                </label>
-              </div>
+                <div className="profile-toggle-card">
+                  <div>
+                    <h3>Notificaciones generales</h3>
+                    <p>
+                      Activa o desactiva la recepción de alertas y avisos asociados a tu cuenta.
+                    </p>
+                  </div>
 
-              <div className="profile-actions">
-                {!isEditing ? (
-                  <button type="button" className="btn-edit" onClick={handleEdit}>
-                    ✏️ Editar perfil
-                  </button>
+                  <label className="switch">
+                    <input
+                      type="checkbox"
+                      name="notificaciones"
+                      checked={!!userData.notificaciones}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                    />
+                    <span className="slider"></span>
+                  </label>
+                </div>
+
+                {!isEditing && (
+                  <div className="profile-note">
+                    Para cambiar esta preferencia, primero da clic en <strong>Editar perfil</strong>.
+                  </div>
+                )}
+
+                <div className="profile-card-head profile-inline-head">
+                  <div>
+                    <h2>Notificaciones recientes</h2>
+                    <p>Alertas importantes de tu cuenta y del sistema.</p>
+                  </div>
+                </div>
+
+                {notifications.length === 0 ? (
+                  <div className="profile-note">
+                    No tienes notificaciones por el momento.
+                  </div>
                 ) : (
-                  <>
-                    <button type="button" className="btn-cancel" onClick={handleCancel}>
-                      Cancelar
-                    </button>
-                    <button type="submit" className="btn-save" disabled={saving}>
-                      {saving ? 'Guardando...' : '💾 Guardar cambios'}
-                    </button>
-                  </>
+                  <div className="profile-summary-list">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification._id || `${notification.type}-${notification.createdAt}`}
+                        className="summary-item"
+                      >
+                        <span>{getNotificationTypeLabel(notification.type)}</span>
+                        <strong>{notification.message}</strong>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-            </form>
-
-            {userData.provider !== 'google' && (
-              <form onSubmit={handleChangePassword} className="profile-password-card">
-                <div className="profile-password-head">
-                  <h3>Seguridad</h3>
-                  <p>Cambia tu contraseña de acceso.</p>
-                </div>
-
-                <div className="profile-password-grid">
-                  <div className="form-group">
-                    <label>Contraseña actual</label>
-                    <input
-                      type="password"
-                      name="currentPassword"
-                      value={passwordData.currentPassword}
-                      onChange={handlePasswordInputChange}
-                      placeholder="Ingresa tu contraseña actual"
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Nueva contraseña</label>
-                    <input
-                      type="password"
-                      name="newPassword"
-                      value={passwordData.newPassword}
-                      onChange={handlePasswordInputChange}
-                      placeholder="Mínimo 8 caracteres"
-                    />
-                  </div>
-                </div>
-
-                <div className="profile-password-actions">
-                  <button
-                    type="submit"
-                    className="btn-password"
-                    disabled={changingPassword}
-                  >
-                    {changingPassword ? 'Actualizando...' : '🔒 Cambiar contraseña'}
-                  </button>
-                </div>
-              </form>
             )}
+
+            {activeTab === 'security' && (
+              <div className="profile-card profile-security-card">
+                <div className="profile-card-head">
+                  <div>
+                    <h2>Seguridad</h2>
+                    <p>Actualiza tu contraseña de acceso de forma segura.</p>
+                  </div>
+                </div>
+
+                {passwordMsg && (
+                  <div className={`profile-message ${passwordMsg.type === 'err' ? 'error' : 'success'}`}>
+                    {passwordMsg.text}
+                  </div>
+                )}
+
+                {userData.provider !== 'google' ? (
+                  <form onSubmit={handleChangePassword} className="profile-password-form">
+                    <div className="profile-password-grid security-grid">
+                      <div className="form-group">
+                        <label>Contraseña actual</label>
+                        <div className="password-field">
+                          <input
+                            type={showPasswords.currentPassword ? 'text' : 'password'}
+                            name="currentPassword"
+                            value={passwordData.currentPassword}
+                            onChange={handlePasswordInputChange}
+                            placeholder="Ingresa tu contraseña actual"
+                          />
+                          <button
+                            type="button"
+                            className="password-toggle-btn"
+                            onClick={() => togglePasswordVisibility('currentPassword')}
+                            aria-label={showPasswords.currentPassword ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'}
+                          >
+                            {showPasswords.currentPassword ? '👁️' : '🙈'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Nueva contraseña</label>
+                        <div className="password-field">
+                          <input
+                            type={showPasswords.newPassword ? 'text' : 'password'}
+                            name="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={handlePasswordInputChange}
+                            placeholder="Mínimo 8 caracteres"
+                          />
+                          <button
+                            type="button"
+                            className="password-toggle-btn"
+                            onClick={() => togglePasswordVisibility('newPassword')}
+                            aria-label={showPasswords.newPassword ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'}
+                          >
+                            {showPasswords.newPassword ? '👁️' : '🙈'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="profile-password-actions">
+                      <button
+                        type="submit"
+                        className="btn-password"
+                        disabled={changingPassword}
+                      >
+                        {changingPassword ? 'Actualizando...' : '🔒 Cambiar contraseña'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="profile-note">
+                    Tu cuenta está vinculada con Google. La contraseña se administra desde Google.
+                  </div>
+                )}
+              </div>
+            )}
+
+
           </div>
         </section>
       </div>
