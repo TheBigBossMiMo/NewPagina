@@ -4,6 +4,7 @@ import './AdminPanel.css';
 import verificacionImg from '../assets/verificacion_vehicular.png';
 import calendarioImg from '../assets/calendario_verificacion.png';
 import estadoImg from '../assets/estado_verificacion.png';
+import MapaVerificentros from '../components/MapaVerificentros';
 
 const imageSections = [
   {
@@ -45,6 +46,10 @@ const AdminPanel = () => {
 
   const handleCloseImage = () => {
     setSelectedImage(null);
+  };
+
+  const handleCloseMapModal = () => {
+    setShowMapModal(false);
   };
 
   return (
@@ -93,7 +98,7 @@ const AdminPanel = () => {
               <button
                 type="button"
                 className="modal-close-btn"
-                onClick={() => setShowMapModal(false)}
+                onClick={handleCloseMapModal}
                 aria-label="Cerrar mapa"
               >
                 ✕
@@ -101,20 +106,13 @@ const AdminPanel = () => {
             </div>
 
             <p className="image-modal-text">
-              En esta sección puedes consultar una vista interactiva de apoyo para ubicar
-              centros de verificación. Más adelante puedes conectar este módulo con una API
-              más completa o con ubicaciones reales personalizadas.
+              En esta sección puedes consultar un mapa interactivo con apartados para
+              CDMX y Estado de México, mostrando verificentros de forma dinámica
+              dentro del listado y sobre el mapa.
             </p>
 
             <div className="map-frame-wrapper">
-              <iframe
-                title="Mapa de Centros de Verificación"
-                className="map-frame"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=-99.40%2C19.20%2C-98.80%2C19.70&layer=mapnik"
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+              <MapaVerificentros />
             </div>
 
             <div className="map-actions">
