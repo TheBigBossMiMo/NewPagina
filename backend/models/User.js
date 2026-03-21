@@ -12,29 +12,34 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true,
-      lowercase: true
+      lowercase: true,
+      trim: true
     },
     phone: {
       type: String,
-      default: ""
+      default: "",
+      trim: true
     },
     password: {
       type: String,
       default: ""
-    },
-    verified: {
-      type: Boolean,
-      default: false
     },
     provider: {
       type: String,
       enum: ["local", "google"],
       default: "local"
     },
+    verified: {
+      type: Boolean,
+      default: false
+    },
     picture: {
       type: String,
       default: ""
+    },
+    notificaciones: {
+      type: Boolean,
+      default: true
     }
   },
   {
@@ -47,20 +52,44 @@ userSchema.pre("save", async function () {
     return;
   }
 
-  if (!this.password || this.password.trim() === "") {
+  if (!this.password || !this.password.trim()) {
+    return;
+  }
+
+  const storedPassword = this.password.trim();
+
+  const looksHashed =
+    storedPassword.startsWith("$2a$") ||
+    storedPassword.startsWith("$2b$") ||
+    storedPassword.startsWith("$2y$");
+
+  if (looksHashed) {
     return;
   }
 
   const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = await bcrypt.hash(storedPassword, salt);
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  if (!this.password || this.password.trim() === "") {
+  if (!this.password || !candidatePassword) {
     return false;
   }
 
-  return await bcrypt.compare(candidatePassword, this.password);
+  const storedPassword = this.password.trim();
+
+  const looksHashed =
+    storedPassword.startsWith("$2a$") ||
+    storedPassword.startsWith("$2b$") ||
+    storedPassword.startsWith("$2y$");
+
+  if (looksHashed) {
+    return await bcrypt.compare(candidatePassword, storedPassword);
+  }
+
+  return storedPassword === candidatePassword;
 };
 
-module.exports = mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
+
+module.exports = User;

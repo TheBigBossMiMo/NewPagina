@@ -2,6 +2,17 @@ const mongoose = require("mongoose");
 
 const vehicleSchema = new mongoose.Schema(
   {
+    ownerEmail: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true
+    },
+    ownerFullName: {
+      type: String,
+      default: "",
+      trim: true
+    },
     entidad: {
       type: String,
       enum: ["CDMX", "EDOMEX"],
@@ -35,5 +46,7 @@ const vehicleSchema = new mongoose.Schema(
 );
 
 vehicleSchema.index({ entidad: 1, placaNormalizada: 1 }, { unique: true });
+vehicleSchema.index({ ownerEmail: 1 });
+vehicleSchema.index({ ownerEmail: 1, createdAt: -1 });
 
 module.exports = mongoose.model("Vehicle", vehicleSchema);
