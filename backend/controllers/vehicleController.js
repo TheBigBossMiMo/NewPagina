@@ -28,7 +28,11 @@ exports.createVehicle = async (req, res) => {
       entidad,
       placa,
       modelo,
-      holograma
+      holograma,
+      marca,
+      submodelo,
+      color,
+      imagen
     } = req.body;
 
     const ownerEmail = (email || "").trim().toLowerCase();
@@ -38,6 +42,10 @@ exports.createVehicle = async (req, res) => {
     const placaNormalizada = normalizePlate(placaValue);
     const modeloNumber = Number(modelo);
     const hologramaValue = String(holograma || "").trim();
+    const marcaValue = String(marca || "").trim();
+    const submodeloValue = String(submodelo || "").trim();
+    const colorValue = String(color || "").trim();
+    const imagenValue = String(imagen || "").trim();
     const maxModelYear = getMaxModelYear();
 
     if (!ownerEmail || !entidadValue || !placaValue || !modelo || !hologramaValue) {
@@ -94,7 +102,11 @@ exports.createVehicle = async (req, res) => {
       placa: placaValue,
       placaNormalizada,
       modelo: modeloNumber,
-      holograma: hologramaValue
+      holograma: hologramaValue,
+      marca: marcaValue,
+      submodelo: submodeloValue,
+      color: colorValue,
+      imagen: imagenValue
     });
 
     await vehicle.save();
@@ -232,6 +244,10 @@ exports.updateVehicle = async (req, res) => {
     const placaNormalizada = normalizePlate(placaValue);
     const modeloNumber = Number(req.body.modelo ?? vehicle.modelo);
     const hologramaValue = String(req.body.holograma || vehicle.holograma).trim();
+    const marcaValue = String(req.body.marca ?? vehicle.marca ?? "").trim();
+    const submodeloValue = String(req.body.submodelo ?? vehicle.submodelo ?? "").trim();
+    const colorValue = String(req.body.color ?? vehicle.color ?? "").trim();
+    const imagenValue = String(req.body.imagen ?? vehicle.imagen ?? "").trim();
     const maxModelYear = getMaxModelYear();
 
     if (!["CDMX", "EDOMEX"].includes(entidadValue)) {
@@ -280,6 +296,10 @@ exports.updateVehicle = async (req, res) => {
     vehicle.placaNormalizada = placaNormalizada;
     vehicle.modelo = modeloNumber;
     vehicle.holograma = hologramaValue;
+    vehicle.marca = marcaValue;
+    vehicle.submodelo = submodeloValue;
+    vehicle.color = colorValue;
+    vehicle.imagen = imagenValue;
 
     await vehicle.save();
 
