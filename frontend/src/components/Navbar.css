@@ -532,3 +532,180 @@
     display: none;
   }
 }
+
+/* =========================
+   NOTIFICACIONES 🔔
+========================= */
+
+.navbar-notification-wrapper {
+  position: relative;
+}
+
+/* Badge rojo */
+.navbar-notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 0.18rem 0.38rem;
+  min-width: 18px;
+  text-align: center;
+  box-shadow: 0 0 0 2px #001a33;
+}
+
+/* Dropdown */
+.navbar-notification-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 340px;
+  max-height: 420px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  z-index: 1300;
+  animation: dropdownFadeIn 0.18s ease;
+}
+
+/* Flechita */
+.navbar-notification-dropdown::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: 16px;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border-left: 1px solid rgba(226, 232, 240, 0.95);
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  transform: rotate(45deg);
+}
+
+/* Header */
+.navbar-notification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.navbar-notification-header strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.navbar-notification-header span {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+/* Botón marcar todo */
+.mark-all-read-btn {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.mark-all-read-btn:hover {
+  text-decoration: underline;
+}
+
+/* Lista */
+.navbar-notification-list {
+  overflow-y: auto;
+  max-height: 320px;
+}
+
+/* Card */
+.navbar-notification-card {
+  display: flex;
+  gap: 0.7rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 0.85rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.navbar-notification-card:hover {
+  background: #f8fbff;
+}
+
+/* No leída */
+.navbar-notification-card.unread {
+  background: #eef5ff;
+}
+
+/* Leída */
+.navbar-notification-card.read {
+  opacity: 0.7;
+}
+
+/* Icono */
+.navbar-notification-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* Contenido */
+.navbar-notification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.navbar-notification-topline {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-notification-content strong {
+  font-size: 0.85rem;
+  color: #0f172a;
+}
+
+.navbar-notification-content p {
+  font-size: 0.8rem;
+  color: #334155;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.navbar-notification-content small {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+/* Puntito azul */
+.navbar-notification-dot {
+  width: 7px;
+  height: 7px;
+  background: #2563eb;
+  border-radius: 50%;
+}
+
+/* Empty */
+.navbar-notification-empty {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+}

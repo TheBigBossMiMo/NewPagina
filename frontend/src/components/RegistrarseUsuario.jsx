@@ -20,7 +20,7 @@ const initialForm = {
   acceptTerms: false,
   notRobot: false
 };
-
+/*modificacion*/
 const RegistrarseUsuario = () => {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState({});
