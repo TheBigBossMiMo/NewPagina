@@ -13,6 +13,7 @@ import Contact from "./pages/Contact";
 import Informacion from './pages/Informacion';
 import RegistrarseUsuario from './components/RegistrarseUsuario';
 
+
 function AppContent() {
   const location = useLocation();
 
