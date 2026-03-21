@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const vehicleLookupRoutes = require("./routes/vehicleLookupRoutes");
 const Vehicle = require("./models/Vehicle");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 
@@ -50,8 +51,8 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/lookup", vehicleLookupRoutes);
 app.use("/api/vehicles", vehicleRoutes);
-
 
 /* =========================
    FUNCIONES AUXILIARES
@@ -544,5 +545,4 @@ app.get("/api/circula/:placa", async (req, res) => {
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
-
 });

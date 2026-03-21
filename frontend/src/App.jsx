@@ -13,6 +13,7 @@ import Contact from "./pages/Contact";
 import Informacion from './pages/Informacion';
 import RegistrarseUsuario from './components/RegistrarseUsuario';
 
+import VehicleLookupPage from './pages/VehicleLookupPage';
 function AppContent() {
   const location = useLocation();
 
@@ -39,6 +40,7 @@ function AppContent() {
           <Route path="/contacto" element={<Contact />} />
           <Route path="/informacion" element={<Informacion />} />
           <Route path="/registrarse-usuario" element={<RegistrarseUsuario />} />
+          <Route path="/consulta-vehiculo" element={<VehicleLookupPage />} />
         </Routes>
       </main>
 
