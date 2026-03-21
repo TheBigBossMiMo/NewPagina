@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './Profile.css';
 
-const API_URL = import.meta.env.VITE_API_URL;
+/*const API_URL = import.meta.env.VITE_API_URL;*/
+
+const API_BASE =
+  window.location.hostname === 'localhost'
+    ? 'http://localhost:3000'
+    : 'https://hoynocircula-backend.onrender.com';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
@@ -14,6 +19,9 @@ const Profile = () => {
   const [passwordMsg, setPasswordMsg] = useState(null);
 
   const [notifications, setNotifications] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
+
   const [activeTab, setActiveTab] = useState('personal');
 
   const [passwordData, setPasswordData] = useState({
@@ -43,15 +51,39 @@ const Profile = () => {
           throw new Error('No hay sesión activa.');
         }
 
-        if (!API_URL) {
+        /*if (!API_URL) {
           throw new Error('No se encontró VITE_API_URL.');
-        }
+        }*/
 
-        const res = await fetch(`${API_URL}/profile?email=${encodeURIComponent(email)}`);
+        /*const res = await fetch(`${API_URL}/profile?email=${encodeURIComponent(email)}`);*/
+
+        /*const res = await fetch(`${API_BASE}/api/profile?email=${encodeURIComponent(email)}`);
         const data = await res.json();
 
         if (!res.ok || !data.success) {
           throw new Error(data.message || 'No se pudo cargar el perfil.');
+        }
+
+        setUserData(data.user);*/
+
+        const profileUrl = `${API_BASE}/api/auth/profile?email=${encodeURIComponent(email)}`;
+        console.log('PROFILE URL:', profileUrl);
+
+        const res = await fetch(profileUrl);
+        const text = await res.text();
+
+        console.log('PROFILE STATUS:', res.status);
+        console.log('PROFILE RAW RESPONSE:', text);
+
+        let data = {};
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`La respuesta no es JSON. Status: ${res.status}`);
+        }
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || `No se pudo cargar el perfil. Status: ${res.status}`);
         }
 
         setUserData(data.user);
@@ -68,9 +100,11 @@ const Profile = () => {
 
     const fetchNotifications = async () => {
       try {
-        if (!email || !API_URL) return;
+        /*if (!email || !API_URL) return;*/
+        if (!email) return;
 
-        const res = await fetch(`${API_URL}/notifications?email=${encodeURIComponent(email)}`);
+        /*const res = await fetch(`${API_URL}/notifications?email=${encodeURIComponent(email)}`);*/
+        const res = await fetch(`${API_BASE}/api/notifications?email=${encodeURIComponent(email)}`);
         const data = await res.json();
 
         if (res.ok && data.success) {
@@ -83,6 +117,43 @@ const Profile = () => {
 
     fetchProfile();
     fetchNotifications();
+  }, [email]);
+
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        /*if (!email || !API_URL) return;*/
+        if (!email) return;
+
+        setLoadingVehicles(true);
+
+        /*        const res = await fetch(`${API_URL}/vehicles?email=${encodeURIComponent(email)}`);*/
+
+        const res = await fetch(`${API_BASE}/api/vehicles?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          const incomingVehicles = Array.isArray(data.vehicles) ? data.vehicles : [];
+
+          const orderedVehicles = [...incomingVehicles].sort((a, b) => {
+            const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
+
+          setVehicles(orderedVehicles);
+        } else {
+          setVehicles([]);
+        }
+      } catch (error) {
+        console.error('Error cargando vehículos:', error);
+        setVehicles([]);
+      } finally {
+        setLoadingVehicles(false);
+      }
+    };
+
+    fetchVehicles();
   }, [email]);
 
   const updateSessionUser = (updatedUser) => {
@@ -130,7 +201,8 @@ const Profile = () => {
       setSaving(true);
       setProfileMsg(null);
 
-      const res = await fetch(`${API_URL}/profile`, {
+      /*const res = await fetch(`${API_URL}/profile`, {*/
+      const res = await fetch(`${API_BASE}/api/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -203,7 +275,8 @@ const Profile = () => {
       setChangingPassword(true);
       setPasswordMsg(null);
 
-      const res = await fetch(`${API_URL}/change-password`, {
+      /*const res = await fetch(`${API_URL}/change-password`, {*/
+      const res = await fetch(`${API_BASE}/api/auth/change-password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -259,7 +332,8 @@ const Profile = () => {
 
       reader.onloadend = async () => {
         try {
-          const res = await fetch(`${API_URL}/profile-image`, {
+          /*const res = await fetch(`${API_URL}/profile-image`, {*/
+          const res = await fetch(`${API_BASE}/api/auth/profile-image`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json'
@@ -328,6 +402,35 @@ const Profile = () => {
     if (type === 'recordatorio') return 'Recordatorio';
     return 'Notificación';
   };
+
+  const totalVehicles = vehicles.length;
+
+  const lastVehicle = useMemo(() => {
+    if (!vehicles.length) return null;
+    return vehicles[0];
+  }, [vehicles]);
+
+  const lastPlate = lastVehicle?.placa || '—';
+
+  const lastDate = lastVehicle?.createdAt
+    ? new Date(lastVehicle.createdAt).toLocaleDateString('es-MX')
+    : '—';
+
+  const entidadMasUsada = useMemo(() => {
+    if (!vehicles.length) return '—';
+
+    const counts = vehicles.reduce((acc, vehicle) => {
+      const entidad = vehicle.entidad || '—';
+      acc[entidad] = (acc[entidad] || 0) + 1;
+      return acc;
+    }, {});
+
+    return Object.keys(counts).reduce((a, b) => (counts[a] >= counts[b] ? a : b));
+  }, [vehicles]);
+
+  const recentVehicles = useMemo(() => {
+    return vehicles.slice(0, 3);
+  }, [vehicles]);
 
   if (loading) {
     return <p style={{ textAlign: 'center', marginTop: '2rem' }}>Cargando perfil...</p>;
@@ -430,8 +533,6 @@ const Profile = () => {
             >
               Seguridad
             </button>
-
-
           </div>
 
           <div className="profile-tab-panel">
@@ -466,11 +567,7 @@ const Profile = () => {
 
                     <div className="form-group">
                       <label>Correo electrónico</label>
-                      <input
-                        type="email"
-                        value={userData.email || ''}
-                        disabled
-                      />
+                      <input type="email" value={userData.email || ''} disabled />
                     </div>
 
                     <div className="form-group">
@@ -487,11 +584,7 @@ const Profile = () => {
 
                     <div className="form-group">
                       <label>Tipo de cuenta</label>
-                      <input
-                        type="text"
-                        value={getProviderLabel()}
-                        disabled
-                      />
+                      <input type="text" value={getProviderLabel()} disabled />
                     </div>
                   </div>
 
@@ -536,6 +629,26 @@ const Profile = () => {
                   </div>
 
                   <div className="summary-item">
+                    <span>Vehículos registrados</span>
+                    <strong>{loadingVehicles ? 'Cargando...' : totalVehicles}</strong>
+                  </div>
+
+                  <div className="summary-item">
+                    <span>Última placa</span>
+                    <strong>{loadingVehicles ? 'Cargando...' : lastPlate}</strong>
+                  </div>
+
+                  <div className="summary-item">
+                    <span>Entidad principal</span>
+                    <strong>{loadingVehicles ? 'Cargando...' : entidadMasUsada}</strong>
+                  </div>
+
+                  <div className="summary-item">
+                    <span>Último registro</span>
+                    <strong>{loadingVehicles ? 'Cargando...' : lastDate}</strong>
+                  </div>
+
+                  <div className="summary-item">
                     <span>Foto de perfil</span>
                     <strong>{userData.picture ? 'Personalizada' : 'Inicial automática'}</strong>
                   </div>
@@ -544,17 +657,68 @@ const Profile = () => {
                     <span>Alertas</span>
                     <strong>{getNotificationsLabel()}</strong>
                   </div>
+                </div>
 
-                  <div className="summary-item">
-                    <span>Correo principal</span>
-                    <strong>{userData.email}</strong>
-                  </div>
-
-                  <div className="summary-item">
-                    <span>Teléfono</span>
-                    <strong>{getPhoneLabel()}</strong>
+                <div className="profile-card-head profile-inline-head">
+                  <div>
+                    <h2>Mis vehículos recientes</h2>
+                    <p>Vista rápida de los últimos vehículos vinculados a tu cuenta.</p>
                   </div>
                 </div>
+
+                {loadingVehicles ? (
+                  <div className="profile-note">Cargando vehículos...</div>
+                ) : recentVehicles.length === 0 ? (
+                  <div className="profile-note">
+                    Aún no tienes vehículos registrados en tu cuenta.
+                  </div>
+                ) : (
+                  <div className="profile-vehicle-preview-grid">
+                    {recentVehicles.map((vehicle) => (
+                      <div key={vehicle._id} className="profile-vehicle-preview-card">
+                        <div className="profile-vehicle-preview-top">
+                          <div className="profile-vehicle-preview-thumb">
+                            {vehicle.vehicleImage ? (
+                              <img
+                                src={vehicle.vehicleImage}
+                                alt={vehicle.placa || 'Vehículo'}
+                                className="profile-vehicle-preview-thumb-img"
+                              />
+                            ) : (
+                              '🚗'
+                            )}
+                          </div>
+
+                          <div className="profile-vehicle-preview-main">
+                            <h3>{vehicle.placa || 'Sin placa'}</h3>
+                            <p>{vehicle.entidad || 'Entidad no definida'}</p>
+                          </div>
+                        </div>
+
+                        <div className="profile-vehicle-preview-meta">
+                          <div className="profile-vehicle-meta-item">
+                            <span>Modelo</span>
+                            <strong>{vehicle.modelo || '—'}</strong>
+                          </div>
+
+                          <div className="profile-vehicle-meta-item">
+                            <span>Holograma</span>
+                            <strong>{vehicle.holograma || '—'}</strong>
+                          </div>
+                        </div>
+
+                        <div className="profile-vehicle-preview-footer">
+                          <small>
+                            Registrado:{' '}
+                            {vehicle.createdAt
+                              ? new Date(vehicle.createdAt).toLocaleDateString('es-MX')
+                              : '—'}
+                          </small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -702,8 +866,6 @@ const Profile = () => {
                 )}
               </div>
             )}
-
-
           </div>
         </section>
       </div>
