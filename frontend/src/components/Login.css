@@ -142,7 +142,10 @@
 }
 
 .login-form input[type="email"],
-.password-field input {
+.password-field input,
+.forgot-modal input[type="email"],
+.forgot-modal input[type="text"],
+.forgot-modal .password-field input {
   padding: 13px 16px;
   border: 1px solid var(--log-border);
   background-color: var(--log-input-bg);
@@ -156,7 +159,10 @@
 }
 
 .login-form input[type="email"]:focus,
-.password-field input:focus {
+.password-field input:focus,
+.forgot-modal input[type="email"]:focus,
+.forgot-modal input[type="text"]:focus,
+.forgot-modal .password-field input:focus {
   border-color: var(--log-primary);
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
   background-color: #ffffff;
@@ -267,6 +273,105 @@
   text-decoration: underline;
 }
 
+/* ===== MODAL FORGOT PASSWORD ===== */
+.forgot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 3000;
+}
+
+.forgot-modal {
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 2rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  border: 1px solid #e2e8f0;
+  animation: forgotModalIn 0.25s ease;
+  text-align: left;
+}
+
+@keyframes forgotModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.forgot-modal h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--log-text-main);
+  font-size: 1.6rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.forgot-modal-text {
+  margin: 0 0 1.35rem 0;
+  color: var(--log-text-muted);
+  font-size: 0.96rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.forgot-modal .input-wrapper {
+  margin-bottom: 1rem;
+}
+
+.forgot-actions {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
+
+.forgot-cancel-btn,
+.forgot-submit-btn {
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.96rem;
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  transition: all 0.22s ease;
+}
+
+.forgot-cancel-btn {
+  background: #eef2f7;
+  color: #334155;
+}
+
+.forgot-cancel-btn:hover {
+  background: #e2e8f0;
+}
+
+.forgot-submit-btn {
+  min-width: 170px;
+  background: linear-gradient(135deg, #001a33 0%, #002244 55%, #2563eb 100%);
+  color: #ffffff;
+}
+
+.forgot-submit-btn:hover {
+  filter: brightness(1.03);
+}
+
+.forgot-submit-btn:disabled,
+.forgot-cancel-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 /* --- RESPONSIVO --- */
 @media (max-width: 480px) {
   .login-container {
@@ -285,5 +390,23 @@
 
   .forgot-link {
     margin-left: 0;
+  }
+
+  .forgot-modal {
+    padding: 1.35rem;
+    border-radius: 18px;
+  }
+
+  .forgot-modal h3 {
+    font-size: 1.35rem;
+  }
+
+  .forgot-actions {
+    flex-direction: column;
+  }
+
+  .forgot-cancel-btn,
+  .forgot-submit-btn {
+    width: 100%;
   }
 }
