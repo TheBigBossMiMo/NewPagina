@@ -13,21 +13,17 @@ import Contact from "./pages/Contact";
 import Informacion from './pages/Informacion';
 import RegistrarseUsuario from './components/RegistrarseUsuario';
 
-
 function AppContent() {
   const location = useLocation();
 
-  // ✅ "Adentro" = hay sesión (token)
   const hasSession = !!localStorage.getItem('token');
 
-  // ✅ Mostrar asistente solo si estás logueado y NO estás en /login
   const showChatbot = hasSession && !location.pathname.startsWith('/login');
 
   return (
     <div className="app-layout">
       <Navbar />
 
-      {/* El main-content empuja al Footer hacia abajo gracias a flex: 1 */}
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -43,7 +39,6 @@ function AppContent() {
         </Routes>
       </main>
 
-      {/* ✅ Chatbot SOLO "adentro" (con sesión) */}
       {showChatbot && <ChatbotWidget />}
 
       <Footer />
