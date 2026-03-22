@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './AdminPanel.css';
 
 import verificacionImg from '../assets/verificacion_vehicular.png';
@@ -106,6 +106,7 @@ const AdminPanel = () => {
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [showContingencyModal, setShowContingencyModal] = useState(false);
 
   const [plate, setPlate] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
@@ -126,6 +127,42 @@ const AdminPanel = () => {
     return buildStatusMeta(statusVehicle, statusVerification);
   }, [statusVehicle, statusVerification]);
 
+  useEffect(() => {
+    setShowContingencyModal(true);
+  }, []);
+
+  const scrollToSection = (id) => {
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
+  };
+
+  const handleContingencyOption = (option) => {
+    setShowContingencyModal(false);
+
+    if (option === 'verificacion') {
+      scrollToSection('verificacion-section');
+      return;
+    }
+
+    if (option === 'estado') {
+      scrollToSection('estado-section');
+      return;
+    }
+
+    if (option === 'calendario') {
+      setShowCalendarModal(true);
+      return;
+    }
+
+    if (option === 'mapa') {
+      setShowMapModal(true);
+    }
+  };
+
   const handleOpenImage = (section) => {
     if (section.id === 2 || section.id === 3) return;
     setSelectedImage(section);
@@ -141,6 +178,10 @@ const AdminPanel = () => {
 
   const handleCloseCalendarModal = () => {
     setShowCalendarModal(false);
+  };
+
+  const handleCloseContingencyModal = () => {
+    setShowContingencyModal(false);
   };
 
   const handleCloseVerificationModal = () => {
@@ -346,6 +387,110 @@ const AdminPanel = () => {
             </p>
 
             <VerificationCalendarPanel />
+          </div>
+        </div>
+      )}
+
+      {showContingencyModal && (
+        <div className="image-modal-overlay">
+          <div className="image-modal contingency-modal-custom">
+            <div className="image-modal-header contingency-modal-header">
+              <div className="contingency-header-copy">
+                <span className="image-modal-badge">Contingencia ambiental</span>
+                <h3>Bienvenido a Contingencia Ambiental</h3>
+                <p className="contingency-hero-text">
+                  A través de este apartado podrás consultar de manera organizada
+                  los servicios principales del sistema. Cada acceso te dirigirá al
+                  módulo correspondiente para revisar información de verificación
+                  vehicular, conocer el estado actual del vehículo, consultar el
+                  calendario oficial de verificación y ubicar centros cercanos
+                  mediante el mapa interactivo, brindando una experiencia más clara,
+                  práctica y visual para el usuario.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="modal-close-btn contingency-close-btn"
+                onClick={handleCloseContingencyModal}
+                aria-label="Cerrar contingencia"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="contingency-feature-intro">
+              <div className="contingency-feature-chip">
+                <span className="contingency-feature-dot"></span>
+                Accesos rápidos del módulo
+              </div>
+              <p>
+                Selecciona una opción para abrir directamente el apartado que deseas
+                consultar dentro del sistema.
+              </p>
+            </div>
+
+            <div className="contingency-card-grid">
+              <button
+                type="button"
+                className="contingency-card-btn"
+                onClick={() => handleContingencyOption('verificacion')}
+              >
+                <div className="contingency-card-icon">🚗</div>
+                <div className="contingency-card-content">
+                  <strong>Verificación vehicular</strong>
+                  <span>
+                    Consulta información general del vehículo, periodos, costos y
+                    datos relacionados con la verificación.
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="contingency-card-btn"
+                onClick={() => handleContingencyOption('estado')}
+              >
+                <div className="contingency-card-icon">📋</div>
+                <div className="contingency-card-content">
+                  <strong>Estado de verificación</strong>
+                  <span>
+                    Revisa de forma más ejecutiva si el vehículo se encuentra
+                    vigente, pendiente o exento.
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="contingency-card-btn"
+                onClick={() => handleContingencyOption('calendario')}
+              >
+                <div className="contingency-card-icon">🗓️</div>
+                <div className="contingency-card-content">
+                  <strong>Calendario</strong>
+                  <span>
+                    Visualiza el calendario oficial según engomado, terminación de
+                    placa y periodos correspondientes.
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className="contingency-card-btn"
+                onClick={() => handleContingencyOption('mapa')}
+              >
+                <div className="contingency-card-icon">📍</div>
+                <div className="contingency-card-content">
+                  <strong>Mapa</strong>
+                  <span>
+                    Ubica verificentros y consulta opciones cercanas de manera más
+                    práctica dentro del mapa interactivo.
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -645,6 +790,7 @@ const AdminPanel = () => {
           return (
             <section
               key={section.id}
+              id="calendario-section"
               className="service-section service-section-single"
             >
               <div className="service-section-content service-section-content-center">
@@ -694,6 +840,7 @@ const AdminPanel = () => {
           return (
             <section
               key={section.id}
+              id="verificacion-section"
               className="service-section service-section-single"
             >
               <div className="service-section-content service-section-content-center">
@@ -748,6 +895,7 @@ const AdminPanel = () => {
           return (
             <section
               key={section.id}
+              id="estado-section"
               className="service-section service-section-single"
             >
               <div className="service-section-content service-section-content-center">
@@ -832,7 +980,7 @@ const AdminPanel = () => {
         );
       })}
 
-      <section className="service-section service-map-section">
+      <section id="mapa-section" className="service-section service-map-section">
         <div className="service-section-content">
           <span className="service-badge">Ubicación</span>
           <h3>Mapa de Centros de Verificación</h3>
@@ -875,4 +1023,3 @@ const AdminPanel = () => {
 };
 
 export default AdminPanel;
-
