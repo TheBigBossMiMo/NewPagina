@@ -333,6 +333,63 @@
   margin-top: 1.25rem;
 }
 
+/* CALENDARIO NUEVO */
+.calendar-preview-card {
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 1.5rem 1.8rem;
+  gap: 0.2rem;
+}
+
+.calendar-preview-top {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.calendar-preview-icon-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
+.calendar-preview-card .verification-preview-icon {
+  margin-bottom: 0.9rem;
+}
+
+.calendar-preview-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.1rem;
+}
+
+.calendar-preview-content h4 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.15;
+}
+
+.calendar-preview-content p {
+  margin: 0;
+  max-width: 520px;
+  color: #5b6b82;
+  font-size: 0.98rem;
+  line-height: 1.65;
+}
+
+.calendar-preview-pills {
+  justify-content: center;
+  margin-top: 1.25rem;
+}
+
+.calendar-preview-btn {
+  align-self: center;
+  margin-top: 1.35rem;
+}
+
 .vehicle-tool-wrapper {
   display: flex;
   flex-direction: column;
@@ -455,49 +512,6 @@
   font-size: 0.94rem;
   font-weight: 800;
   box-shadow: 0 10px 22px rgba(37, 99, 235, 0.08);
-}
-
-.vehicle-query-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.95rem;
-  padding: 1rem 1.05rem;
-  border-radius: 20px;
-  background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%);
-  border: 1px solid rgba(147, 197, 253, 0.45);
-  text-align: left;
-}
-
-.vehicle-query-note-center {
-  width: 100%;
-}
-
-.vehicle-query-note-icon {
-  flex-shrink: 0;
-  width: 50px;
-  height: 50px;
-  border-radius: 16px;
-  display: grid;
-  place-items: center;
-  font-size: 1.45rem;
-  background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%);
-}
-
-.vehicle-query-note h4 {
-  margin: 0 0 0.35rem;
-  color: #0f172a;
-  font-size: 1rem;
-}
-
-.vehicle-query-note p {
-  margin: 0;
-  color: #475569;
-  font-size: 0.92rem;
-  line-height: 1.65;
-}
-
-.vehicle-status-empty {
-  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
 }
 
 .vehicle-result-panel {
@@ -974,6 +988,18 @@
   .service-section-image {
     min-height: 240px;
   }
+
+  .calendar-preview-top {
+    justify-content: center;
+  }
+
+  .calendar-preview-content h4 {
+    font-size: 1.28rem;
+  }
+
+  .calendar-preview-content p {
+    font-size: 0.93rem;
+  }
 }
 
 @media (max-width: 520px) {
@@ -995,14 +1021,23 @@
     font-size: 1.75rem;
   }
 
-  .vehicle-query-note {
-    padding: 0.9rem;
-  }
-
   .vehicle-result-card,
   .vehicle-status-quick-chip,
   .vehicle-documents-panel,
   .vehicle-result-panel {
     border-radius: 16px;
+  }
+
+  .calendar-preview-card {
+    padding: 1.2rem 1rem 1.35rem;
+  }
+
+  .calendar-preview-pills {
+    gap: 0.5rem;
+  }
+
+  .calendar-preview-pills span {
+    font-size: 0.78rem;
+    padding: 0.45rem 0.72rem;
   }
 }
