@@ -298,9 +298,8 @@ const AdminPanel = () => {
             </div>
 
             <p className="image-modal-text">
-              En esta sección puedes consultar un mapa interactivo con apartados para
-              CDMX y Estado de México, mostrando verificentros de forma dinámica dentro
-              del listado y sobre el mapa.
+              Aquí puedes ubicar más fácil los verificentros y revisar opciones cercanas
+              para que tengas una referencia rápida antes de salir.
             </p>
 
             <div className="map-frame-wrapper">
@@ -653,19 +652,25 @@ const AdminPanel = () => {
                 <h3>{section.title}</h3>
                 <p>{section.description}</p>
 
-                <div className="verification-preview-card verification-center-card">
-                  <div className="verification-preview-badge">
-                    Resumen del calendario
+                <div className="verification-preview-card verification-center-card calendar-preview-card">
+                  <div className="calendar-preview-top">
+                    <div className="verification-preview-badge">
+                      Resumen del calendario
+                    </div>
                   </div>
-                  <div className="verification-preview-icon">🗓️</div>
-                  <h4>Consulta dinámica dentro de un recuadro flotante</h4>
-                  <p>
-                    Abre el calendario completo desde este resumen visual para
-                    consultar engomado, terminación y periodos sin dejar saturada la
-                    sección principal.
-                  </p>
 
-                  <div className="verification-preview-pills">
+                  <div className="calendar-preview-icon-wrap">
+                    <div className="verification-preview-icon">🗓️</div>
+                  </div>
+
+                  <div className="calendar-preview-content">
+                    <h4>Calendario</h4>
+                    <p>
+                      Consulta rápida por engomado, terminación y periodos en un solo lugar.
+                    </p>
+                  </div>
+
+                  <div className="verification-preview-pills calendar-preview-pills">
                     <span>Engomado</span>
                     <span>Terminación</span>
                     <span>Periodos</span>
@@ -674,7 +679,7 @@ const AdminPanel = () => {
 
                   <button
                     type="button"
-                    className="section-action-btn verification-preview-btn"
+                    className="section-action-btn verification-preview-btn calendar-preview-btn"
                     onClick={() => setShowCalendarModal(true)}
                   >
                     Ver calendario
@@ -733,17 +738,6 @@ const AdminPanel = () => {
                       </button>
                     </div>
                   </form>
-
-                  <div className="vehicle-query-note vehicle-query-note-center">
-                    <div className="vehicle-query-note-icon">🚗</div>
-                    <div>
-                      <h4>Consulta desde base de datos</h4>
-                      <p>
-                        Ingresa la placa para abrir un resultado flotante con datos del
-                        vehículo, periodo, fecha límite, costo y documentos sugeridos.
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
@@ -798,18 +792,6 @@ const AdminPanel = () => {
                       </button>
                     </div>
                   </form>
-
-                  <div className="vehicle-query-note vehicle-query-note-center vehicle-status-empty">
-                    <div className="vehicle-query-note-icon">📋</div>
-                    <div>
-                      <h4>Consulta rápida del estado</h4>
-                      <p>
-                        Ingresa una placa para abrir un recuadro flotante con el estado
-                        de verificación, periodo, fecha límite, costo estimado y
-                        diagnóstico visual.
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </section>
@@ -855,9 +837,12 @@ const AdminPanel = () => {
           <span className="service-badge">Ubicación</span>
           <h3>Mapa de Centros de Verificación</h3>
           <p>
-            Accede a una vista interactiva del mapa para ubicar centros de verificación.
-            Este apartado puede servir como referencia inicial y después conectarse con
-            una API más robusta o con direcciones específicas según tu proyecto.
+            Aquí puedes ubicar centros de verificación de una manera más práctica y
+            darte una idea de cuáles te quedan mejor según tu zona.
+          </p>
+          <p>
+            Te sirve como apoyo rápido para revisar opciones cercanas antes de elegir a
+            cuál ir.
           </p>
 
           <button
@@ -882,7 +867,7 @@ const AdminPanel = () => {
         >
           <div className="map-preview-icon">📍</div>
           <strong>Centros de Verificación</strong>
-          <span>Vista interactiva disponible</span>
+          <span>Ubica opciones cercanas</span>
         </div>
       </section>
     </div>
