@@ -1289,13 +1289,30 @@
 
 .detail-calendar-card {
   margin-top: 0.4rem;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .detail-calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
   gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 10px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
+
+.detail-calendar-grid .day-pill {
+  flex: 0 0 240px;
+  min-width: 240px;
+  max-width: 240px;
+}
+
+
 
 .vehicle-detail-actions {
   margin-top: 1.2rem;

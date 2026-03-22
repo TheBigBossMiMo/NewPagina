@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import './VehicleRegistration.css';
+import { BRAND_MODELS, VEHICLE_COLORS } from '../data/vehicleCatalog';
 
 const API_BASE =
   window.location.hostname === 'localhost'
@@ -25,7 +26,10 @@ const VehicleRegistration = () => {
     entidad: '',
     placa: '',
     modelo: '',
-    holograma: ''
+    holograma: '',
+    marca: '',
+    submodelo: '',
+    color: ''
   });
 
   const [saving, setSaving] = useState(false);
@@ -39,7 +43,10 @@ const VehicleRegistration = () => {
     entidad: false,
     placa: false,
     modelo: false,
-    holograma: false
+    holograma: false,
+    marca: false,
+    submodelo: false,
+    color: false
   });
 
   const [vehicles, setVehicles] = useState([]);
@@ -52,14 +59,20 @@ const VehicleRegistration = () => {
     entidad: '',
     placa: '',
     modelo: '',
-    holograma: ''
+    holograma: '',
+    marca: '',
+    submodelo: '',
+    color: ''
   });
 
   const [editTouched, setEditTouched] = useState({
     entidad: false,
     placa: false,
     modelo: false,
-    holograma: false
+    holograma: false,
+    marca: false,
+    submodelo: false,
+    color: false
   });
 
   const [detailVehicle, setDetailVehicle] = useState(null);
@@ -372,6 +385,13 @@ const VehicleRegistration = () => {
     return arr;
   };
 
+  const brandOptions = useMemo(() => Object.keys(BRAND_MODELS), []);
+  const submodelOptions = useMemo(() => BRAND_MODELS[formData.marca] || [], [formData.marca]);
+  const editSubmodelOptions = useMemo(
+    () => BRAND_MODELS[editFormData.marca] || [],
+    [editFormData.marca]
+  );
+
   const placaOk = useMemo(() => {
     return isValidPlateFormat(formData.placa, formData.entidad);
   }, [formData.placa, formData.entidad]);
@@ -389,7 +409,20 @@ const VehicleRegistration = () => {
     return ['CDMX', 'EDOMEX'].includes(formData.entidad);
   }, [formData.entidad]);
 
-  const isFormValid = entidadOk && placaOk && modeloOk && hologramaOk;
+  const marcaOk = useMemo(() => {
+    return !!formData.marca && brandOptions.includes(formData.marca);
+  }, [formData.marca, brandOptions]);
+
+  const submodeloOk = useMemo(() => {
+    return !!formData.submodelo && (BRAND_MODELS[formData.marca] || []).includes(formData.submodelo);
+  }, [formData.marca, formData.submodelo]);
+
+  const colorOk = useMemo(() => {
+    return !!formData.color && VEHICLE_COLORS.includes(formData.color);
+  }, [formData.color]);
+
+  const isFormValid =
+    entidadOk && placaOk && modeloOk && hologramaOk && marcaOk && submodeloOk && colorOk;
 
   const editPlacaOk = useMemo(() => {
     return isValidPlateFormat(editFormData.placa, editFormData.entidad);
@@ -408,7 +441,26 @@ const VehicleRegistration = () => {
     return ['CDMX', 'EDOMEX'].includes(editFormData.entidad);
   }, [editFormData.entidad]);
 
-  const isEditFormValid = editEntidadOk && editPlacaOk && editModeloOk && editHologramaOk;
+  const editMarcaOk = useMemo(() => {
+    return !!editFormData.marca && brandOptions.includes(editFormData.marca);
+  }, [editFormData.marca, brandOptions]);
+
+  const editSubmodeloOk = useMemo(() => {
+    return !!editFormData.submodelo && (BRAND_MODELS[editFormData.marca] || []).includes(editFormData.submodelo);
+  }, [editFormData.marca, editFormData.submodelo]);
+
+  const editColorOk = useMemo(() => {
+    return !!editFormData.color && VEHICLE_COLORS.includes(editFormData.color);
+  }, [editFormData.color]);
+
+  const isEditFormValid =
+    editEntidadOk &&
+    editPlacaOk &&
+    editModeloOk &&
+    editHologramaOk &&
+    editMarcaOk &&
+    editSubmodeloOk &&
+    editColorOk;
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -420,6 +472,15 @@ const VehicleRegistration = () => {
         ...prev,
         entidad: value,
         placa: ''
+      }));
+      return;
+    }
+
+    if (name === 'marca') {
+      setFormData((prev) => ({
+        ...prev,
+        marca: value,
+        submodelo: ''
       }));
       return;
     }
@@ -445,6 +506,15 @@ const VehicleRegistration = () => {
         ...prev,
         entidad: value,
         placa: ''
+      }));
+      return;
+    }
+
+    if (name === 'marca') {
+      setEditFormData((prev) => ({
+        ...prev,
+        marca: value,
+        submodelo: ''
       }));
       return;
     }
@@ -499,14 +569,20 @@ const VehicleRegistration = () => {
       entidad: '',
       placa: '',
       modelo: '',
-      holograma: ''
+      holograma: '',
+      marca: '',
+      submodelo: '',
+      color: ''
     });
 
     setTouched({
       entidad: false,
       placa: false,
       modelo: false,
-      holograma: false
+      holograma: false,
+      marca: false,
+      submodelo: false,
+      color: false
     });
 
     setSavedOk(false);
@@ -520,13 +596,19 @@ const VehicleRegistration = () => {
       entidad: '',
       placa: '',
       modelo: '',
-      holograma: ''
+      holograma: '',
+      marca: '',
+      submodelo: '',
+      color: ''
     });
     setEditTouched({
       entidad: false,
       placa: false,
       modelo: false,
-      holograma: false
+      holograma: false,
+      marca: false,
+      submodelo: false,
+      color: false
     });
   };
 
@@ -556,11 +638,14 @@ const VehicleRegistration = () => {
       entidad: true,
       placa: true,
       modelo: true,
-      holograma: true
+      holograma: true,
+      marca: true,
+      submodelo: true,
+      color: true
     });
 
     if (!isFormValid) {
-      showToast('warn', '⚠️ Revisa entidad, placa, modelo y holograma.');
+      showToast('warn', '⚠️ Revisa entidad, placa, modelo, holograma, marca, submodelo y color.');
       return;
     }
 
@@ -579,7 +664,10 @@ const VehicleRegistration = () => {
         entidad: formData.entidad,
         placa: normalizePlate(formData.placa),
         modelo: Number(formData.modelo),
-        holograma: formData.holograma
+        holograma: formData.holograma,
+        marca: formData.marca,
+        submodelo: formData.submodelo,
+        color: formData.color
       };
 
       const response = await fetch(`${API_BASE}/api/vehicles`, {
@@ -604,14 +692,20 @@ const VehicleRegistration = () => {
         entidad: false,
         placa: false,
         modelo: false,
-        holograma: false
+        holograma: false,
+        marca: false,
+        submodelo: false,
+        color: false
       });
 
       setFormData({
         entidad: '',
         placa: '',
         modelo: '',
-        holograma: ''
+        holograma: '',
+        marca: '',
+        submodelo: '',
+        color: ''
       });
 
       await fetchVehicles();
@@ -630,7 +724,10 @@ const VehicleRegistration = () => {
       entidad: true,
       placa: true,
       modelo: true,
-      holograma: true
+      holograma: true,
+      marca: true,
+      submodelo: true,
+      color: true
     });
 
     if (!selectedVehicleId) {
@@ -639,7 +736,10 @@ const VehicleRegistration = () => {
     }
 
     if (!isEditFormValid) {
-      showToast('warn', '⚠️ Revisa los datos del vehículo a editar.');
+      showToast(
+        'warn',
+        '⚠️ Revisa entidad, placa, modelo, holograma, marca, submodelo y color del vehículo a editar.'
+      );
       return;
     }
 
@@ -657,7 +757,10 @@ const VehicleRegistration = () => {
         entidad: editFormData.entidad,
         placa: normalizePlate(editFormData.placa),
         modelo: Number(editFormData.modelo),
-        holograma: editFormData.holograma
+        holograma: editFormData.holograma,
+        marca: editFormData.marca,
+        submodelo: editFormData.submodelo,
+        color: editFormData.color
       };
 
       const response = await fetch(`${API_BASE}/api/vehicles/${selectedVehicleId}`, {
@@ -1071,6 +1174,85 @@ const VehicleRegistration = () => {
                       <small className="hint hint-error">Selecciona un holograma válido.</small>
                     )}
                   </div>
+
+                  <div className="form-group">
+                    <label htmlFor="marca">Marca</label>
+                    <select
+                      id="marca"
+                      name="marca"
+                      value={formData.marca}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={inputClass('marca', marcaOk)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona marca
+                      </option>
+                      {brandOptions.map((brand) => (
+                        <option key={brand} value={brand}>
+                          {brand}
+                        </option>
+                      ))}
+                    </select>
+
+                    {touched.marca && !marcaOk && (
+                      <small className="hint hint-error">Selecciona una marca válida.</small>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="submodelo">Submodelo</label>
+                    <select
+                      id="submodelo"
+                      name="submodelo"
+                      value={formData.submodelo}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={inputClass('submodelo', submodeloOk)}
+                      required
+                      disabled={!formData.marca}
+                    >
+                      <option value="" disabled>
+                        {formData.marca ? 'Selecciona submodelo' : 'Primero selecciona marca'}
+                      </option>
+                      {submodelOptions.map((submodel) => (
+                        <option key={submodel} value={submodel}>
+                          {submodel}
+                        </option>
+                      ))}
+                    </select>
+
+                    {touched.submodelo && !submodeloOk && (
+                      <small className="hint hint-error">Selecciona un submodelo válido.</small>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="color">Color</label>
+                    <select
+                      id="color"
+                      name="color"
+                      value={formData.color}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      className={inputClass('color', colorOk)}
+                      required
+                    >
+                      <option value="" disabled>
+                        Selecciona color
+                      </option>
+                      {VEHICLE_COLORS.map((color) => (
+                        <option key={color} value={color}>
+                          {color}
+                        </option>
+                      ))}
+                    </select>
+
+                    {touched.color && !colorOk && (
+                      <small className="hint hint-error">Selecciona un color válido.</small>
+                    )}
+                  </div>
                 </div>
 
                 <div className="form-actions">
@@ -1160,6 +1342,9 @@ const VehicleRegistration = () => {
 
                     <div className="day-status">Modelo: {vehicle.modelo}</div>
                     <div className="day-reason">Holograma: {vehicle.holograma}</div>
+                    <div className="day-reason">Marca: {vehicle.marca || '—'}</div>
+                    <div className="day-reason">Submodelo: {vehicle.submodelo || '—'}</div>
+                    <div className="day-reason">Color: {vehicle.color || '—'}</div>
                     <div className="day-reason">Registrado: {fmtDate(vehicle.createdAt)}</div>
 
                     <div className="form-actions" style={{ marginTop: '1rem' }}>
@@ -1206,13 +1391,19 @@ const VehicleRegistration = () => {
                           entidad: vehicle.entidad || '',
                           placa: vehicle.placa || '',
                           modelo: vehicle.modelo || '',
-                          holograma: vehicle.holograma || ''
+                          holograma: vehicle.holograma || '',
+                          marca: vehicle.marca || '',
+                          submodelo: vehicle.submodelo || '',
+                          color: vehicle.color || ''
                         });
                         setEditTouched({
                           entidad: false,
                           placa: false,
                           modelo: false,
-                          holograma: false
+                          holograma: false,
+                          marca: false,
+                          submodelo: false,
+                          color: false
                         });
                       } else {
                         handleEditReset();
@@ -1342,6 +1533,85 @@ const VehicleRegistration = () => {
                           <small className="hint hint-error">Selecciona un holograma válido.</small>
                         )}
                       </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-marca">Marca</label>
+                        <select
+                          id="edit-marca"
+                          name="marca"
+                          value={editFormData.marca}
+                          onChange={handleEditChange}
+                          onBlur={handleEditBlur}
+                          className={editInputClass('marca', editMarcaOk)}
+                          required
+                        >
+                          <option value="" disabled>
+                            Selecciona marca
+                          </option>
+                          {brandOptions.map((brand) => (
+                            <option key={brand} value={brand}>
+                              {brand}
+                            </option>
+                          ))}
+                        </select>
+
+                        {editTouched.marca && !editMarcaOk && (
+                          <small className="hint hint-error">Selecciona una marca válida.</small>
+                        )}
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-submodelo">Submodelo</label>
+                        <select
+                          id="edit-submodelo"
+                          name="submodelo"
+                          value={editFormData.submodelo}
+                          onChange={handleEditChange}
+                          onBlur={handleEditBlur}
+                          className={editInputClass('submodelo', editSubmodeloOk)}
+                          required
+                          disabled={!editFormData.marca}
+                        >
+                          <option value="" disabled>
+                            {editFormData.marca ? 'Selecciona submodelo' : 'Primero selecciona marca'}
+                          </option>
+                          {editSubmodelOptions.map((submodel) => (
+                            <option key={submodel} value={submodel}>
+                              {submodel}
+                            </option>
+                          ))}
+                        </select>
+
+                        {editTouched.submodelo && !editSubmodeloOk && (
+                          <small className="hint hint-error">Selecciona un submodelo válido.</small>
+                        )}
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-color">Color</label>
+                        <select
+                          id="edit-color"
+                          name="color"
+                          value={editFormData.color}
+                          onChange={handleEditChange}
+                          onBlur={handleEditBlur}
+                          className={editInputClass('color', editColorOk)}
+                          required
+                        >
+                          <option value="" disabled>
+                            Selecciona color
+                          </option>
+                          {VEHICLE_COLORS.map((color) => (
+                            <option key={color} value={color}>
+                              {color}
+                            </option>
+                          ))}
+                        </select>
+
+                        {editTouched.color && !editColorOk && (
+                          <small className="hint hint-error">Selecciona un color válido.</small>
+                        )}
+                      </div>
                     </div>
 
                     <div className="form-actions">
@@ -1397,6 +1667,9 @@ const VehicleRegistration = () => {
 
                     <div className="day-status">Modelo: {vehicle.modelo}</div>
                     <div className="day-reason">Holograma: {vehicle.holograma}</div>
+                    <div className="day-reason">Marca: {vehicle.marca || '—'}</div>
+                    <div className="day-reason">Submodelo: {vehicle.submodelo || '—'}</div>
+                    <div className="day-reason">Color: {vehicle.color || '—'}</div>
 
                     <div className="form-actions" style={{ marginTop: '1rem' }}>
                       <button
@@ -1418,10 +1691,7 @@ const VehicleRegistration = () => {
 
       {detailVehicle && (
         <div className="vehicle-detail-overlay" onClick={closeVehicleDetail}>
-          <div
-            className="vehicle-detail-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="vehicle-detail-modal" onClick={(e) => e.stopPropagation()}>
             <div className="vehicle-detail-header">
               <div>
                 <h3>Detalle del vehículo</h3>
@@ -1465,6 +1735,21 @@ const VehicleRegistration = () => {
                   <div className="vehicle-detail-data-item">
                     <span>Holograma</span>
                     <strong>{detailVehicle.holograma}</strong>
+                  </div>
+
+                  <div className="vehicle-detail-data-item">
+                    <span>Marca</span>
+                    <strong>{detailVehicle.marca || '—'}</strong>
+                  </div>
+
+                  <div className="vehicle-detail-data-item">
+                    <span>Submodelo</span>
+                    <strong>{detailVehicle.submodelo || '—'}</strong>
+                  </div>
+
+                  <div className="vehicle-detail-data-item">
+                    <span>Color</span>
+                    <strong>{detailVehicle.color || '—'}</strong>
                   </div>
 
                   <div className="vehicle-detail-data-item">
@@ -1524,13 +1809,19 @@ const VehicleRegistration = () => {
                     entidad: detailVehicle.entidad || '',
                     placa: detailVehicle.placa || '',
                     modelo: detailVehicle.modelo || '',
-                    holograma: detailVehicle.holograma || ''
+                    holograma: detailVehicle.holograma || '',
+                    marca: detailVehicle.marca || '',
+                    submodelo: detailVehicle.submodelo || '',
+                    color: detailVehicle.color || ''
                   });
                   setEditTouched({
                     entidad: false,
                     placa: false,
                     modelo: false,
-                    holograma: false
+                    holograma: false,
+                    marca: false,
+                    submodelo: false,
+                    color: false
                   });
                   setActiveTab('editar');
                 }}
@@ -1555,4 +1846,4 @@ const VehicleRegistration = () => {
 
 export default VehicleRegistration;
 
-/**/ 
+/**/

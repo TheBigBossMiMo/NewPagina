@@ -38,6 +38,25 @@ const vehicleSchema = new mongoose.Schema(
       type: String,
       enum: ["00", "0", "1", "2"],
       required: true
+    },
+    marca: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    submodelo: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    color: {
+      type: String,
+      default: "",
+      trim: true
+    },
+    imagen: {
+      type: String,
+      default: ""
     }
   },
   {
