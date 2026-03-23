@@ -208,6 +208,55 @@ const AdminPanel = () => {
     setShowStatusModal(false);
   };
 
+  const normalizeLookupResponse = (data, cleanPlate) => {
+    const vehicle =
+      data?.vehicle ||
+      data?.vehiculo ||
+      data?.data?.vehicle ||
+      data?.data?.vehiculo ||
+      (data?.placa || data?.modelo || data?.holograma || data?.entidad
+        ? {
+            placa: data?.placa || cleanPlate,
+            modelo: data?.modelo || data?.marca || 'Sin información',
+            holograma: data?.holograma || 'Sin información',
+            entidad: data?.entidad || data?.estado || 'Sin información'
+          }
+        : null);
+
+    const verification =
+      data?.verification ||
+      data?.verificacion ||
+      data?.data?.verification ||
+      data?.data?.verificacion ||
+      data?.resultado ||
+      (data?.estatus ||
+      data?.debeVerificar !== undefined ||
+      data?.motivo ||
+      data?.terminacion ||
+      data?.engomado
+        ? {
+            estatus: data?.estatus || 'Sin información',
+            debeVerificar:
+              data?.debeVerificar ??
+              data?.debe_verificar ??
+              data?.requiereVerificacion ??
+              'No',
+            motivo: data?.motivo || data?.mensaje || 'Sin información',
+            terminacion: data?.terminacion || 'Sin información',
+            engomado: data?.engomado || 'Sin información',
+            periodoActual: data?.periodoActual || data?.periodo || 'Sin información',
+            periodoSiguiente: data?.periodoSiguiente || 'Sin información',
+            meses: data?.meses || 'Sin información',
+            fechaLimite: data?.fechaLimite || 'Sin información',
+            costoEstimado: data?.costoEstimado || 'Sin información',
+            nota: data?.nota || data?.mensaje || 'Sin información',
+            documentos: Array.isArray(data?.documentos) ? data.documentos : []
+          }
+        : null);
+
+    return { vehicle, verification };
+  };
+
   const fetchVehicleLookup = async (rawPlate) => {
     const cleanPlate = rawPlate.trim().toUpperCase();
 
@@ -216,19 +265,62 @@ const AdminPanel = () => {
     }
 
     const response = await fetch(
-      `${API_BASE}/api/lookup/vehicle/${encodeURIComponent(cleanPlate)}`
+      `${API_BASE}/api/circula/${encodeURIComponent(cleanPlate)}`,
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      }
     );
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type') || '';
+    const rawText = await response.text();
 
-    if (!response.ok || !data.success) {
+    let data = null;
+
+    if (contentType.includes('application/json') && rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch (error) {
+        throw new Error('La respuesta del servidor no contiene JSON válido.');
+      }
+    } else if (rawText && rawText.trim().startsWith('{')) {
+      try {
+        data = JSON.parse(rawText);
+      } catch (error) {
+        throw new Error('La respuesta del servidor no contiene JSON válido.');
+      }
+    }
+
+    if (!response.ok) {
+      const message =
+        data?.message ||
+        data?.error ||
+        `Error ${response.status}: no fue posible consultar el vehículo.`;
+      throw new Error(message);
+    }
+
+    if (!data) {
+      throw new Error(
+        'El backend devolvió una respuesta inválida. Revisa la ruta /api/circula/:placa en el servidor.'
+      );
+    }
+
+    if (data.success === false) {
       throw new Error(data.message || 'No fue posible consultar el vehículo.');
     }
 
-    return {
-      vehicle: data.vehicle || null,
-      verification: data.verification || null
-    };
+    const normalized = normalizeLookupResponse(data, cleanPlate);
+
+    if (!normalized.vehicle && !normalized.verification) {
+      throw new Error(
+        data.message ||
+          'No se encontró información suficiente del vehículo para mostrar el resultado.'
+      );
+    }
+
+    return normalized;
   };
 
   const handleLookupVehicle = async (e) => {
