@@ -147,7 +147,7 @@ const markerHtml = (isActive = false) => `
 `;
 
 const createMarkerIcon = (isActive = false) =>
-  new L.DivIcon({
+  L.divIcon({
     className: 'custom-verificentro-marker',
     html: markerHtml(isActive),
     iconSize: [30, 30],
@@ -175,6 +175,22 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
   return earthRadius * c;
 }
 
+function FixMapSize() {
+  const map = useMap();
+
+  useEffect(() => {
+    const t1 = setTimeout(() => map.invalidateSize(), 200);
+    const t2 = setTimeout(() => map.invalidateSize(), 500);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [map]);
+
+  return null;
+}
+
 function MapController({
   selectedCentro,
   userLocation,
@@ -183,6 +199,11 @@ function MapController({
   municipioKey
 }) {
   const map = useMap();
+
+  useEffect(() => {
+    const t = setTimeout(() => map.invalidateSize(), 120);
+    return () => clearTimeout(t);
+  }, [map, regionKey, municipioKey]);
 
   useEffect(() => {
     if (selectedCentro) {
@@ -302,7 +323,10 @@ const MapaVerificentros = () => {
 
   useEffect(() => {
     if (centrosActuales.length > 0) {
-      setSelectedId(centrosActuales[0].id);
+      setSelectedId((prev) => {
+        if (prev && centrosActuales.some((item) => item.id === prev)) return prev;
+        return centrosActuales[0].id;
+      });
     } else {
       setSelectedId(null);
     }
@@ -363,7 +387,7 @@ const MapaVerificentros = () => {
   return (
     <div className="verificentros-map-shell">
       <div className="map-top-overlay">
-        <div className="map-top-chip">Mapa dinámico</div>
+        <div className="map-top-chip">Mapa interactivo</div>
 
         <div className="map-top-info">
           <strong>
@@ -502,6 +526,8 @@ const MapaVerificentros = () => {
             zoomControl={false}
             className="verificentros-map"
           >
+            <FixMapSize />
+
             <ZoomControl position="topleft" />
 
             <MapController
@@ -549,18 +575,16 @@ const MapaVerificentros = () => {
             {userLocation && (
               <Marker
                 position={[userLocation.lat, userLocation.lng]}
-                icon={
-                  new L.DivIcon({
-                    className: 'user-location-marker',
-                    html: `
-                      <div class="user-location-dot-wrap">
-                        <div class="user-location-dot"></div>
-                      </div>
-                    `,
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
-                  })
-                }
+                icon={L.divIcon({
+                  className: 'user-location-marker',
+                  html: `
+                    <div class="user-location-dot-wrap">
+                      <div class="user-location-dot"></div>
+                    </div>
+                  `,
+                  iconSize: [24, 24],
+                  iconAnchor: [12, 12]
+                })}
               >
                 <Popup>
                   <div className="verificentros-popup">
