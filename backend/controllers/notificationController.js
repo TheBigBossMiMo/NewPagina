@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
 
 /* =========================
@@ -6,6 +7,28 @@ const Notification = require("../models/Notification");
 const normalizeEmail = (email) => {
   return String(email || "").trim().toLowerCase();
 };
+
+const normalizeText = (value) => {
+  return String(value || "").trim();
+};
+
+const normalizePlate = (value) => {
+  return String(value || "").trim().toUpperCase();
+};
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+/* =========================
+   TIPOS PERMITIDOS
+========================= */
+const allowedTypes = [
+  "contingencia",
+  "doble_hoy_no_circula",
+  "recordatorio",
+  "vehiculo",
+  "general",
+  "chatbot"
+];
 
 /* =========================
    OBTENER NOTIFICACIONES DEL USUARIO
@@ -22,7 +45,8 @@ exports.getNotifications = async (req, res) => {
     }
 
     const notifications = await Notification.find({ userEmail: email })
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     return res.json({
       success: true,
@@ -43,11 +67,11 @@ exports.getNotifications = async (req, res) => {
 exports.createNotification = async (req, res) => {
   try {
     const userEmail = normalizeEmail(req.body.userEmail);
-    const type = String(req.body.type || "").trim();
-    const title = String(req.body.title || "").trim();
-    const message = String(req.body.message || "").trim();
-    const relatedId = req.body.relatedId ? String(req.body.relatedId).trim() : null;
-    const plate = req.body.plate ? String(req.body.plate).trim().toUpperCase() : null;
+    const type = normalizeText(req.body.type);
+    const title = normalizeText(req.body.title);
+    const message = normalizeText(req.body.message);
+    const relatedId = req.body.relatedId ? normalizeText(req.body.relatedId) : null;
+    const plate = req.body.plate ? normalizePlate(req.body.plate) : null;
 
     if (!userEmail || !type || !message) {
       return res.status(400).json({
@@ -55,14 +79,6 @@ exports.createNotification = async (req, res) => {
         message: "userEmail, type y message son obligatorios."
       });
     }
-
-    const allowedTypes = [
-      "contingencia",
-      "doble_hoy_no_circula",
-      "recordatorio",
-      "vehiculo",
-      "general"
-    ];
 
     if (!allowedTypes.includes(type)) {
       return res.status(400).json({
@@ -110,6 +126,13 @@ exports.markAsRead = async (req, res) => {
       });
     }
 
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID de notificación inválido."
+      });
+    }
+
     const notification = await Notification.findById(id);
 
     if (!notification) {
@@ -126,8 +149,10 @@ exports.markAsRead = async (req, res) => {
       });
     }
 
-    notification.read = true;
-    await notification.save();
+    if (!notification.read) {
+      notification.read = true;
+      await notification.save();
+    }
 
     return res.json({
       success: true,
@@ -187,6 +212,13 @@ exports.deleteNotification = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "El email es obligatorio."
+      });
+    }
+
+    if (!isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "ID de notificación inválido."
       });
     }
 

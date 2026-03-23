@@ -2,12 +2,14 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const cron = require("node-cron");
 
 const authRoutes = require("./routes/authRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const vehicleLookupRoutes = require("./routes/vehicleLookupRoutes");
 const Vehicle = require("./models/Vehicle");
 const vehicleRoutes = require("./routes/vehicleRoutes");
+const chatbotRoutes = require("./routes/chatbotRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,10 +37,10 @@ app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("MongoDB conectado");
+    console.log("✅ MongoDB conectado");
   })
   .catch((err) => {
-    console.error("Error MongoDB:", err);
+    console.error("❌ Error MongoDB:", err);
   });
 
 app.get("/", (req, res) => {
@@ -53,6 +55,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/lookup", vehicleLookupRoutes);
 app.use("/api/vehicles", vehicleRoutes);
+app.use("/api/chatbot", chatbotRoutes);
 
 /* =========================
    FUNCIONES AUXILIARES
@@ -117,7 +120,7 @@ const getSaturdayNumberInMonth = (date) => {
 };
 
 const evaluateCirculation = ({ plate, holograma }) => {
-  const diaActual = new Date().getDay(); // 0=Dom, 1=Lun ... 6=Sab
+  const diaActual = new Date().getDay();
   const ultimoDigito = getLastNumericDigit(plate);
 
   if (ultimoDigito === null || Number.isNaN(ultimoDigito)) {
@@ -128,11 +131,11 @@ const evaluateCirculation = ({ plate, holograma }) => {
   }
 
   const dayRule = {
-    1: [5, 6], // Lunes
-    2: [7, 8], // Martes
-    3: [3, 4], // Miércoles
-    4: [1, 2], // Jueves
-    5: [9, 0]  // Viernes
+    1: [5, 6],
+    2: [7, 8],
+    3: [3, 4],
+    4: [1, 2],
+    5: [9, 0]
   };
 
   if (diaActual === 0) {
@@ -222,11 +225,23 @@ app.post("/api/vehicles", async (req, res) => {
     const currentYear = new Date().getFullYear();
     const maxModelYear = currentYear + 2;
 
+    const ownerEmail = String(req.body.email || req.body.ownerEmail || "").trim().toLowerCase();
+    const ownerFullName = String(req.body.fullName || req.body.ownerFullName || "").trim();
+
     const entidad = normalizeState(req.body.entidad || "");
     const placa = normalizePlate(req.body.placa || "");
     const placaNormalizada = normalizeRawPlate(req.body.placa || "");
     const modelo = Number(req.body.modelo);
     const holograma = String(req.body.holograma || "").trim();
+    const marca = String(req.body.marca || "").trim();
+    const submodelo = String(req.body.submodelo || "").trim();
+    const color = String(req.body.color || "").trim();
+
+    if (!ownerEmail) {
+      return res.status(400).json({
+        message: "No se recibió el correo del propietario."
+      });
+    }
 
     if (!entidad) {
       return res.status(400).json({
@@ -267,12 +282,27 @@ app.post("/api/vehicles", async (req, res) => {
     }
 
     const vehicle = new Vehicle({
+      ownerEmail,
+      ownerFullName,
+      entidad,
+      placa,
+      placaNormalizada,
+      modelo,
+      holograma,
+      marca,
+      submodelo,
+      color
+    });
+
+    /* Código anterior
+    const vehicle = new Vehicle({
       entidad,
       placa,
       placaNormalizada,
       modelo,
       holograma
     });
+    */
 
     await vehicle.save();
 
@@ -296,7 +326,14 @@ app.post("/api/vehicles", async (req, res) => {
 
 app.get("/api/vehicles", async (req, res) => {
   try {
+    const email = String(req.query.email || "").trim().toLowerCase();
+
+    /* Código anterior
     const vehicles = await Vehicle.find().sort({ createdAt: -1 });
+    */
+
+    const query = email ? { ownerEmail: email } : {};
+    const vehicles = await Vehicle.find(query).sort({ createdAt: -1 });
 
     return res.json({
       success: true,
@@ -348,11 +385,15 @@ app.put("/api/vehicles/:id", async (req, res) => {
     const currentYear = new Date().getFullYear();
     const maxModelYear = currentYear + 2;
 
+    const ownerFullName = String(req.body.fullName || req.body.ownerFullName || "").trim();
     const entidad = normalizeState(req.body.entidad || "");
     const placa = normalizePlate(req.body.placa || "");
     const placaNormalizada = normalizeRawPlate(req.body.placa || "");
     const modelo = Number(req.body.modelo);
     const holograma = String(req.body.holograma || "").trim();
+    const marca = String(req.body.marca || "").trim();
+    const submodelo = String(req.body.submodelo || "").trim();
+    const color = String(req.body.color || "").trim();
 
     if (!entidad) {
       return res.status(400).json({
@@ -408,6 +449,21 @@ app.put("/api/vehicles/:id", async (req, res) => {
     vehicle.placaNormalizada = placaNormalizada;
     vehicle.modelo = modelo;
     vehicle.holograma = holograma;
+    vehicle.marca = marca;
+    vehicle.submodelo = submodelo;
+    vehicle.color = color;
+
+    if (ownerFullName) {
+      vehicle.ownerFullName = ownerFullName;
+    }
+
+    /* Código anterior
+    vehicle.entidad = entidad;
+    vehicle.placa = placa;
+    vehicle.placaNormalizada = placaNormalizada;
+    vehicle.modelo = modelo;
+    vehicle.holograma = holograma;
+    */
 
     await vehicle.save();
 
@@ -543,6 +599,48 @@ app.get("/api/circula/:placa", async (req, res) => {
   }
 });
 
+/* =========================
+   JOB AUTOMÁTICO DE ALERTAS
+   Se ejecuta todos los días a las 09:00
+========================= */
+
+cron.schedule("0 9 * * *", async () => {
+  try {
+    console.log("🔔 Ejecutando revisión automática de vehículos...");
+
+    const vehicles = await Vehicle.find();
+
+    for (const vehicle of vehicles) {
+      const placa = vehicle?.placa || "Sin placa";
+      const holograma = String(vehicle?.holograma || "").trim();
+
+      if (holograma === "2") {
+        console.log(`⚠️ Vehículo ${placa}: requiere atención por holograma 2.`);
+      }
+
+      const ultimoDigito = getLastNumericDigit(placa);
+
+      if (ultimoDigito !== null) {
+        if ([5, 6].includes(ultimoDigito)) {
+          console.log(`🚫 Vehículo ${placa}: posible restricción de lunes.`);
+        } else if ([7, 8].includes(ultimoDigito)) {
+          console.log(`🚫 Vehículo ${placa}: posible restricción de martes.`);
+        } else if ([3, 4].includes(ultimoDigito)) {
+          console.log(`🚫 Vehículo ${placa}: posible restricción de miércoles.`);
+        } else if ([1, 2].includes(ultimoDigito)) {
+          console.log(`🚫 Vehículo ${placa}: posible restricción de jueves.`);
+        } else if ([9, 0].includes(ultimoDigito)) {
+          console.log(`🚫 Vehículo ${placa}: posible restricción de viernes.`);
+        }
+      }
+    }
+
+    console.log("✅ Revisión automática completada.");
+  } catch (error) {
+    console.error("❌ Error en job automático de alertas:", error);
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
+  console.log(`🚀 Servidor corriendo en el puerto ${PORT}`);
 });
