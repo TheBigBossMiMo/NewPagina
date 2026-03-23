@@ -1,3 +1,4 @@
+require('dotenv').config();
 const Vehicle = require('../models/Vehicle');
 const OpenAI = require('openai');
 const {
@@ -5,6 +6,9 @@ const {
   addToHistory,
   updateSession
 } = require('./chatbotMemoryService');
+
+console.log('HF_TOKEN cargado:', !!process.env.HF_TOKEN);
+console.log('HF_MODEL cargado:', process.env.HF_MODEL);
 
 const client = new OpenAI({
   baseURL: 'https://router.huggingface.co/v1',
