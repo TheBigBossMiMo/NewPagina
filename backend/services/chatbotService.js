@@ -1113,10 +1113,11 @@ Responde solo dentro del sistema Hoy No Circula y también puedes orientar sobre
     return {
       reply: finalReply
     };
-  } catch (err) {
-    console.error('Error en chatbotService:', err);
+  } catch (error) {
+    console.error("🔥 ERROR CHATBOT:", error);
+
     return {
-      reply: 'Ocurrió un error al procesar tu consulta.'
+      reply: "Error real: " + (error.message || JSON.stringify(error))
     };
   }
 };
