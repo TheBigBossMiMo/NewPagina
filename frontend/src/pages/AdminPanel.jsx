@@ -102,6 +102,46 @@ const buildStatusMeta = (vehicle, verification) => {
   };
 };
 
+const normalizeLookupResponse = (data, cleanPlate, cleanState) => {
+  const payload = data?.data || data;
+
+  const vehicle =
+    payload?.vehicle ||
+    payload?.vehiculo || {
+      placa: payload?.placa || cleanPlate,
+      modelo: payload?.modelo || payload?.marca || 'Sin información',
+      holograma: payload?.holograma || 'Sin información',
+      entidad: payload?.entidad || payload?.estado || cleanState || 'Sin información'
+    };
+
+  const verification =
+    payload?.verification ||
+    payload?.verificacion || {
+      estatus: payload?.estatus || (payload?.circula ? 'Puede circular' : 'Restricción activa'),
+      debeVerificar:
+        payload?.debeVerificar ??
+        payload?.debe_verificar ??
+        payload?.requiereVerificacion ??
+        (payload?.circula ? 'No' : 'Sí'),
+      motivo:
+        payload?.motivo ||
+        payload?.mensaje ||
+        payload?.razon ||
+        'Consulta procesada correctamente.',
+      terminacion: payload?.terminacion || 'Sin información',
+      engomado: payload?.engomado || 'Sin información',
+      periodoActual: payload?.periodoActual || payload?.periodo || 'Sin información',
+      periodoSiguiente: payload?.periodoSiguiente || 'Sin información',
+      meses: payload?.meses || 'Sin información',
+      fechaLimite: payload?.fechaLimite || 'Sin información',
+      costoEstimado: payload?.costoEstimado || 'Sin información',
+      nota: payload?.nota || payload?.mensaje || 'Sin información',
+      documentos: Array.isArray(payload?.documentos) ? payload.documentos : []
+    };
+
+  return { vehicle, verification };
+};
+
 const AdminPanel = () => {
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -109,6 +149,7 @@ const AdminPanel = () => {
   const [showContingencyModal, setShowContingencyModal] = useState(false);
 
   const [plate, setPlate] = useState('');
+  const [lookupState, setLookupState] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [lookupVehicle, setLookupVehicle] = useState(null);
@@ -116,6 +157,7 @@ const AdminPanel = () => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const [statusPlate, setStatusPlate] = useState('');
+  const [statusState, setStatusState] = useState('');
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState('');
   const [statusVehicle, setStatusVehicle] = useState(null);
@@ -194,6 +236,7 @@ const AdminPanel = () => {
 
   const handleResetLookup = () => {
     setPlate('');
+    setLookupState('');
     setLookupError('');
     setLookupVehicle(null);
     setLookupVerification(null);
@@ -202,70 +245,27 @@ const AdminPanel = () => {
 
   const handleResetStatusLookup = () => {
     setStatusPlate('');
+    setStatusState('');
     setStatusError('');
     setStatusVehicle(null);
     setStatusVerification(null);
     setShowStatusModal(false);
   };
 
-  const normalizeLookupResponse = (data, cleanPlate) => {
-    const vehicle =
-      data?.vehicle ||
-      data?.vehiculo ||
-      data?.data?.vehicle ||
-      data?.data?.vehiculo ||
-      (data?.placa || data?.modelo || data?.holograma || data?.entidad
-        ? {
-            placa: data?.placa || cleanPlate,
-            modelo: data?.modelo || data?.marca || 'Sin información',
-            holograma: data?.holograma || 'Sin información',
-            entidad: data?.entidad || data?.estado || 'Sin información'
-          }
-        : null);
-
-    const verification =
-      data?.verification ||
-      data?.verificacion ||
-      data?.data?.verification ||
-      data?.data?.verificacion ||
-      data?.resultado ||
-      (data?.estatus ||
-      data?.debeVerificar !== undefined ||
-      data?.motivo ||
-      data?.terminacion ||
-      data?.engomado
-        ? {
-            estatus: data?.estatus || 'Sin información',
-            debeVerificar:
-              data?.debeVerificar ??
-              data?.debe_verificar ??
-              data?.requiereVerificacion ??
-              'No',
-            motivo: data?.motivo || data?.mensaje || 'Sin información',
-            terminacion: data?.terminacion || 'Sin información',
-            engomado: data?.engomado || 'Sin información',
-            periodoActual: data?.periodoActual || data?.periodo || 'Sin información',
-            periodoSiguiente: data?.periodoSiguiente || 'Sin información',
-            meses: data?.meses || 'Sin información',
-            fechaLimite: data?.fechaLimite || 'Sin información',
-            costoEstimado: data?.costoEstimado || 'Sin información',
-            nota: data?.nota || data?.mensaje || 'Sin información',
-            documentos: Array.isArray(data?.documentos) ? data.documentos : []
-          }
-        : null);
-
-    return { vehicle, verification };
-  };
-
-  const fetchVehicleLookup = async (rawPlate) => {
-    const cleanPlate = rawPlate.trim().toUpperCase();
+  const fetchVehicleLookup = async (rawPlate, rawState) => {
+    const cleanPlate = String(rawPlate || '').trim().toUpperCase();
+    const cleanState = String(rawState || '').trim().toUpperCase();
 
     if (!cleanPlate) {
       throw new Error('Ingresa una placa para consultar.');
     }
 
+    if (!cleanState || !['CDMX', 'EDOMEX'].includes(cleanState)) {
+      throw new Error('Debes seleccionar una entidad válida: CDMX o EDOMEX.');
+    }
+
     const response = await fetch(
-      `${API_BASE}/api/circula/${encodeURIComponent(cleanPlate)}`,
+      `${API_BASE}/api/circula/${encodeURIComponent(cleanPlate)}?estado=${encodeURIComponent(cleanState)}`,
       {
         method: 'GET',
         headers: {
@@ -279,48 +279,29 @@ const AdminPanel = () => {
 
     let data = null;
 
-    if (contentType.includes('application/json') && rawText) {
-      try {
-        data = JSON.parse(rawText);
-      } catch (error) {
-        throw new Error('La respuesta del servidor no contiene JSON válido.');
-      }
-    } else if (rawText && rawText.trim().startsWith('{')) {
-      try {
-        data = JSON.parse(rawText);
-      } catch (error) {
-        throw new Error('La respuesta del servidor no contiene JSON válido.');
+    if (rawText) {
+      if (contentType.includes('application/json') || rawText.trim().startsWith('{')) {
+        try {
+          data = JSON.parse(rawText);
+        } catch (error) {
+          throw new Error('La respuesta del servidor no contiene JSON válido.');
+        }
       }
     }
 
     if (!response.ok) {
-      const message =
+      throw new Error(
         data?.message ||
-        data?.error ||
-        `Error ${response.status}: no fue posible consultar el vehículo.`;
-      throw new Error(message);
+          data?.error ||
+          `Error ${response.status}: no fue posible consultar el vehículo.`
+      );
     }
 
     if (!data) {
-      throw new Error(
-        'El backend devolvió una respuesta inválida. Revisa la ruta /api/circula/:placa en el servidor.'
-      );
+      throw new Error('El backend devolvió una respuesta inválida.');
     }
 
-    if (data.success === false) {
-      throw new Error(data.message || 'No fue posible consultar el vehículo.');
-    }
-
-    const normalized = normalizeLookupResponse(data, cleanPlate);
-
-    if (!normalized.vehicle && !normalized.verification) {
-      throw new Error(
-        data.message ||
-          'No se encontró información suficiente del vehículo para mostrar el resultado.'
-      );
-    }
-
-    return normalized;
+    return normalizeLookupResponse(data, cleanPlate, cleanState);
   };
 
   const handleLookupVehicle = async (e) => {
@@ -332,7 +313,7 @@ const AdminPanel = () => {
       setLookupVehicle(null);
       setLookupVerification(null);
 
-      const result = await fetchVehicleLookup(plate);
+      const result = await fetchVehicleLookup(plate, lookupState);
 
       setLookupVehicle(result.vehicle);
       setLookupVerification(result.verification);
@@ -354,7 +335,7 @@ const AdminPanel = () => {
       setStatusVehicle(null);
       setStatusVerification(null);
 
-      const result = await fetchVehicleLookup(statusPlate);
+      const result = await fetchVehicleLookup(statusPlate, statusState);
 
       setStatusVehicle(result.vehicle);
       setStatusVerification(result.verification);
@@ -417,701 +398,4 @@ const AdminPanel = () => {
             <div className="image-modal-header">
               <div>
                 <span className="image-modal-badge">Mapa interactivo</span>
-                <h3>Mapa de Centros de Verificación</h3>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={handleCloseMapModal}
-                aria-label="Cerrar mapa"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="image-modal-text">
-              Aquí puedes ubicar más fácil los verificentros y revisar opciones cercanas
-              para que tengas una referencia rápida antes de salir.
-            </p>
-
-            <div className="map-frame-wrapper">
-              <MapaVerificentros />
-            </div>
-
-            <div className="map-actions">
-              <a
-                href="https://www.openstreetmap.org/#map=11/19.4326/-99.1332"
-                target="_blank"
-                rel="noreferrer"
-                className="section-action-btn"
-              >
-                Abrir mapa completo
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCalendarModal && (
-        <div className="image-modal-overlay">
-          <div className="image-modal verification-modal-custom">
-            <div className="image-modal-header">
-              <div>
-                <span className="image-modal-badge">Calendario dinámico</span>
-                <h3>Calendario de Verificación</h3>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={handleCloseCalendarModal}
-                aria-label="Cerrar calendario"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="image-modal-text">
-              Consulta el calendario completo de verificación de forma más ordenada,
-              primero con un resumen general y después con filtros divididos por
-              engomado y terminación.
-            </p>
-
-            <VerificationCalendarPanel />
-          </div>
-        </div>
-      )}
-
-      {showContingencyModal && (
-        <div className="image-modal-overlay">
-          <div className="image-modal contingency-modal-custom">
-            <div className="image-modal-header contingency-modal-header">
-              <div className="contingency-header-copy">
-                <span className="image-modal-badge">Contingencia ambiental</span>
-                <h3>Bienvenido a Contingencia Ambiental</h3>
-                <p className="contingency-hero-text">
-                  A través de este apartado podrás consultar de manera organizada
-                  los servicios principales del sistema. Cada acceso te dirigirá al
-                  módulo correspondiente para revisar información de verificación
-                  vehicular, conocer el estado actual del vehículo, consultar el
-                  calendario oficial de verificación y ubicar centros cercanos
-                  mediante el mapa interactivo, brindando una experiencia más clara,
-                  práctica y visual para el usuario.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close-btn contingency-close-btn"
-                onClick={handleCloseContingencyModal}
-                aria-label="Cerrar contingencia"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="contingency-feature-intro">
-              <div className="contingency-feature-chip">
-                <span className="contingency-feature-dot"></span>
-                Accesos rápidos del módulo
-              </div>
-              <p>
-                Selecciona una opción para abrir directamente el apartado que deseas
-                consultar dentro del sistema.
-              </p>
-            </div>
-
-            <div className="contingency-card-grid">
-              <button
-                type="button"
-                className="contingency-card-btn"
-                onClick={() => handleContingencyOption('verificacion')}
-              >
-                <div className="contingency-card-icon">🚗</div>
-                <div className="contingency-card-content">
-                  <strong>Verificación vehicular</strong>
-                  <span>
-                    Consulta información general del vehículo, periodos, costos y
-                    datos relacionados con la verificación.
-                  </span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="contingency-card-btn"
-                onClick={() => handleContingencyOption('estado')}
-              >
-                <div className="contingency-card-icon">📋</div>
-                <div className="contingency-card-content">
-                  <strong>Estado de verificación</strong>
-                  <span>
-                    Revisa de forma más ejecutiva si el vehículo se encuentra
-                    vigente, pendiente o exento.
-                  </span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="contingency-card-btn"
-                onClick={() => handleContingencyOption('calendario')}
-              >
-                <div className="contingency-card-icon">🗓️</div>
-                <div className="contingency-card-content">
-                  <strong>Calendario</strong>
-                  <span>
-                    Visualiza el calendario oficial según engomado, terminación de
-                    placa y periodos correspondientes.
-                  </span>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                className="contingency-card-btn"
-                onClick={() => handleContingencyOption('mapa')}
-              >
-                <div className="contingency-card-icon">📍</div>
-                <div className="contingency-card-content">
-                  <strong>Mapa</strong>
-                  <span>
-                    Ubica verificentros y consulta opciones cercanas de manera más
-                    práctica dentro del mapa interactivo.
-                  </span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showVerificationModal && lookupVehicle && lookupVerification && (
-        <div className="image-modal-overlay">
-          <div className="image-modal verification-modal-custom">
-            <div className="image-modal-header">
-              <div>
-                <span className="image-modal-badge">Resultado de consulta</span>
-                <h3>Información de Verificación Vehicular</h3>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={handleCloseVerificationModal}
-                aria-label="Cerrar resultado"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="image-modal-text">
-              Consulta generada con base en la placa registrada en el sistema. Aquí se
-              muestran los datos del vehículo y la información de verificación de forma
-              más amplia y ordenada.
-            </p>
-
-            <div className="vehicle-modal-layout">
-              <div className="vehicle-result-panel">
-                <h4>Datos del vehículo</h4>
-
-                <div className="vehicle-result-grid">
-                  <div className="vehicle-result-card">
-                    <span>Placa</span>
-                    <strong>{lookupVehicle.placa}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Modelo</span>
-                    <strong>{lookupVehicle.modelo}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Holograma</span>
-                    <strong>{lookupVehicle.holograma}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Entidad</span>
-                    <strong>{lookupVehicle.entidad}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="vehicle-result-panel">
-                <h4>Información de verificación</h4>
-
-                <div
-                  className={`vehicle-status-banner ${
-                    isTruthyVerification(lookupVerification.debeVerificar)
-                      ? 'vehicle-status-expired'
-                      : 'vehicle-status-valid'
-                  }`}
-                >
-                  <span className="vehicle-status-pill">
-                    {lookupVerification.estatus}
-                  </span>
-
-                  <h4>
-                    {isTruthyVerification(lookupVerification.debeVerificar)
-                      ? 'Sí te toca verificar'
-                      : 'No te toca verificar por ahora'}
-                  </h4>
-
-                  <p>{lookupVerification.motivo}</p>
-                </div>
-
-                <div className="vehicle-result-grid">
-                  <div className="vehicle-result-card">
-                    <span>Terminación</span>
-                    <strong>{lookupVerification.terminacion}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Engomado</span>
-                    <strong>{lookupVerification.engomado}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Periodo actual</span>
-                    <strong>{lookupVerification.periodoActual}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Próximo periodo</span>
-                    <strong>{lookupVerification.periodoSiguiente}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Meses</span>
-                    <strong>{lookupVerification.meses}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card">
-                    <span>Fecha límite</span>
-                    <strong>{lookupVerification.fechaLimite}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card vehicle-result-card-full">
-                    <span>Costo estimado</span>
-                    <strong>{lookupVerification.costoEstimado}</strong>
-                  </div>
-
-                  <div className="vehicle-result-card vehicle-result-card-full">
-                    <span>Nota</span>
-                    <strong>{lookupVerification.nota}</strong>
-                  </div>
-                </div>
-
-                <div className="vehicle-documents-panel">
-                  <h5>Documentos sugeridos</h5>
-                  <ul>
-                    {(lookupVerification.documentos || []).map((doc, index) => (
-                      <li key={`${doc}-${index}`}>{doc}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="verification-modal-actions">
-                  <button
-                    type="button"
-                    className="vehicle-secondary-btn"
-                    onClick={handleCloseVerificationModal}
-                  >
-                    Cerrar resultado
-                  </button>
-
-                  <button
-                    type="button"
-                    className="vehicle-outline-btn"
-                    onClick={handleResetLookup}
-                  >
-                    Nueva consulta
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showStatusModal && statusVehicle && statusVerification && statusMeta && (
-        <div className="image-modal-overlay">
-          <div className="image-modal status-modal-custom">
-            <div className="image-modal-header">
-              <div>
-                <span className="image-modal-badge">Estado del vehículo</span>
-                <h3>Estado de Verificación del Vehículo</h3>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={handleCloseStatusModal}
-                aria-label="Cerrar estado"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="image-modal-text">
-              Consulta rápida del estado de verificación con una vista más ejecutiva y
-              visual. Puedes abrir después el detalle completo si lo necesitas.
-            </p>
-
-            <div className="vehicle-result-panel vehicle-status-summary-panel">
-              <div
-                className={`vehicle-status-banner ${
-                  statusMeta.tone === 'expired'
-                    ? 'vehicle-status-expired'
-                    : statusMeta.tone === 'exempt'
-                      ? 'vehicle-status-exempt'
-                      : 'vehicle-status-valid'
-                }`}
-              >
-                <span className="vehicle-status-pill">{statusMeta.badge}</span>
-                <h4>{statusMeta.title}</h4>
-                <p>{statusMeta.message}</p>
-              </div>
-
-              <div className="vehicle-status-quick-info">
-                <div className="vehicle-status-quick-chip">
-                  <span>Placa</span>
-                  <strong>{statusVehicle.placa}</strong>
-                </div>
-                <div className="vehicle-status-quick-chip">
-                  <span>Modelo</span>
-                  <strong>{statusVehicle.modelo}</strong>
-                </div>
-                <div className="vehicle-status-quick-chip">
-                  <span>Entidad</span>
-                  <strong>{statusVehicle.entidad}</strong>
-                </div>
-                <div className="vehicle-status-quick-chip">
-                  <span>Holograma</span>
-                  <strong>{statusVehicle.holograma}</strong>
-                </div>
-              </div>
-
-              <div className="vehicle-result-grid">
-                <div className="vehicle-result-card">
-                  <span>Terminación</span>
-                  <strong>{statusVerification.terminacion}</strong>
-                </div>
-
-                <div className="vehicle-result-card">
-                  <span>Engomado</span>
-                  <strong>{statusVerification.engomado}</strong>
-                </div>
-
-                <div className="vehicle-result-card">
-                  <span>Periodo actual</span>
-                  <strong>{statusVerification.periodoActual}</strong>
-                </div>
-
-                <div className="vehicle-result-card">
-                  <span>Próximo periodo</span>
-                  <strong>{statusVerification.periodoSiguiente}</strong>
-                </div>
-
-                <div className="vehicle-result-card">
-                  <span>Meses</span>
-                  <strong>{statusVerification.meses}</strong>
-                </div>
-
-                <div className="vehicle-result-card">
-                  <span>Fecha límite</span>
-                  <strong>{statusVerification.fechaLimite}</strong>
-                </div>
-
-                <div className="vehicle-result-card vehicle-result-card-full">
-                  <span>Costo estimado</span>
-                  <strong>{statusVerification.costoEstimado}</strong>
-                </div>
-
-                <div className="vehicle-result-card vehicle-result-card-full">
-                  <span>Nota</span>
-                  <strong>{statusVerification.nota}</strong>
-                </div>
-              </div>
-
-              <div className="vehicle-documents-panel">
-                <h5>Documentos sugeridos</h5>
-                <ul>
-                  {(statusVerification.documentos || []).map((doc, index) => (
-                    <li key={`${doc}-${index}`}>{doc}</li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="verification-modal-actions vehicle-status-actions">
-                <button
-                  type="button"
-                  className="vehicle-secondary-btn"
-                  onClick={handleResetStatusLookup}
-                >
-                  Nueva consulta
-                </button>
-
-                <button
-                  type="button"
-                  className="vehicle-outline-btn"
-                  onClick={handleOpenStatusDetail}
-                >
-                  Ver detalle completo
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <section className="services-hero">
-        <span className="services-hero-badge">Servicios del módulo</span>
-        <h2>Servicios de Verificación</h2>
-        <p>
-          Consulta información visual relevante sobre verificación vehicular,
-          calendario, estado del vehículo y acceso a un mapa interactivo de centros de
-          verificación.
-        </p>
-      </section>
-
-      {imageSections.map((section) => {
-        if (section.id === 2) {
-          return (
-            <section
-              key={section.id}
-              id="calendario-section"
-              className="service-section service-section-single"
-            >
-              <div className="service-section-content service-section-content-center">
-                <span className="service-badge">{section.badge}</span>
-                <h3>{section.title}</h3>
-                <p>{section.description}</p>
-
-                <div className="verification-preview-card verification-center-card calendar-preview-card">
-                  <div className="calendar-preview-top">
-                    <div className="verification-preview-badge">
-                      Resumen del calendario
-                    </div>
-                  </div>
-
-                  <div className="calendar-preview-icon-wrap">
-                    <div className="verification-preview-icon">🗓️</div>
-                  </div>
-
-                  <div className="calendar-preview-content">
-                    <h4>Calendario</h4>
-                    <p>
-                      Consulta rápida por engomado, terminación y periodos en un solo lugar.
-                    </p>
-                  </div>
-
-                  <div className="verification-preview-pills calendar-preview-pills">
-                    <span>Engomado</span>
-                    <span>Terminación</span>
-                    <span>Periodos</span>
-                    <span>Modal</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="section-action-btn verification-preview-btn calendar-preview-btn"
-                    onClick={() => setShowCalendarModal(true)}
-                  >
-                    Ver calendario
-                  </button>
-                </div>
-              </div>
-            </section>
-          );
-        }
-
-        if (section.id === 1) {
-          return (
-            <section
-              key={section.id}
-              id="verificacion-section"
-              className="service-section service-section-single"
-            >
-              <div className="service-section-content service-section-content-center">
-                <span className="service-badge">{section.badge}</span>
-                <h3>{section.title}</h3>
-                <p>{section.description}</p>
-
-                <div className="vehicle-tool-wrapper vehicle-tool-wrapper-center">
-                  <form
-                    className="vehicle-tool-form vehicle-tool-form-centered"
-                    onSubmit={handleLookupVehicle}
-                  >
-                    <div className="vehicle-field vehicle-field-full">
-                      <label htmlFor="vehicle-lookup-plate">Placa</label>
-                      <input
-                        id="vehicle-lookup-plate"
-                        type="text"
-                        value={plate}
-                        onChange={(e) => {
-                          setPlate(e.target.value.toUpperCase());
-                          if (lookupError) setLookupError('');
-                        }}
-                        placeholder="Ej. ABC123D"
-                      />
-                    </div>
-
-                    {lookupError && (
-                      <small className="vehicle-error">{lookupError}</small>
-                    )}
-
-                    <div className="vehicle-actions vehicle-actions-center">
-                      <button type="submit" className="section-action-btn">
-                        {lookupLoading ? 'Consultando...' : 'Consultar vehículo'}
-                      </button>
-
-                      <button
-                        type="button"
-                        className="vehicle-secondary-btn"
-                        onClick={handleResetLookup}
-                      >
-                        Limpiar
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </section>
-          );
-        }
-
-        if (section.id === 3) {
-          return (
-            <section
-              key={section.id}
-              id="estado-section"
-              className="service-section service-section-single"
-            >
-              <div className="service-section-content service-section-content-center">
-                <span className="service-badge">{section.badge}</span>
-                <h3>{section.title}</h3>
-                <p>{section.description}</p>
-
-                <div className="vehicle-tool-wrapper vehicle-tool-wrapper-center">
-                  <form
-                    className="vehicle-tool-form vehicle-tool-form-centered"
-                    onSubmit={handleStatusLookup}
-                  >
-                    <div className="vehicle-field vehicle-field-full">
-                      <label htmlFor="vehicle-status-plate">Placa</label>
-                      <input
-                        id="vehicle-status-plate"
-                        type="text"
-                        value={statusPlate}
-                        onChange={(e) => {
-                          setStatusPlate(e.target.value.toUpperCase());
-                          if (statusError) setStatusError('');
-                        }}
-                        placeholder="Ej. ABC123D"
-                      />
-                    </div>
-
-                    {statusError && (
-                      <small className="vehicle-error">{statusError}</small>
-                    )}
-
-                    <div className="vehicle-actions vehicle-actions-center">
-                      <button type="submit" className="section-action-btn">
-                        {statusLoading ? 'Consultando...' : 'Consultar estado'}
-                      </button>
-
-                      <button
-                        type="button"
-                        className="vehicle-secondary-btn"
-                        onClick={handleResetStatusLookup}
-                      >
-                        Limpiar
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </section>
-          );
-        }
-
-        return (
-          <section key={section.id} className="service-section">
-            <div className="service-section-content">
-              <span className="service-badge">{section.badge}</span>
-              <h3>{section.title}</h3>
-              <p>{section.description}</p>
-
-              <button
-                type="button"
-                className="section-action-btn"
-                onClick={() => handleOpenImage(section)}
-              >
-                Ver imagen en grande
-              </button>
-            </div>
-
-            <div
-              className="service-section-image"
-              onClick={() => handleOpenImage(section)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  handleOpenImage(section);
-                }
-              }}
-            >
-              <img src={section.image} alt={section.alt} />
-              <div className="image-zoom-hint">🔍 Clic para ampliar</div>
-            </div>
-          </section>
-        );
-      })}
-
-      <section id="mapa-section" className="service-section service-map-section">
-        <div className="service-section-content">
-          <span className="service-badge">Ubicación</span>
-          <h3>Mapa de Centros de Verificación</h3>
-          <p>
-            Aquí puedes ubicar centros de verificación de una manera más práctica y
-            darte una idea de cuáles te quedan mejor según tu zona.
-          </p>
-          <p>
-            Te sirve como apoyo rápido para revisar opciones cercanas antes de elegir a
-            cuál ir.
-          </p>
-
-          <button
-            type="button"
-            className="section-action-btn"
-            onClick={() => setShowMapModal(true)}
-          >
-            Abrir mapa interactivo
-          </button>
-        </div>
-
-        <div
-          className="service-map-preview"
-          onClick={() => setShowMapModal(true)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              setShowMapModal(true);
-            }
-          }}
-        >
-          <div className="map-preview-icon">📍</div>
-          <strong>Centros de Verificación</strong>
-          <span>Ubica opciones cercanas</span>
-        </div>
-      </section>
-    </div>
-  );
-};
-
-export default AdminPanel;
+                <h3>Mapa de Centros de Verificación</h
