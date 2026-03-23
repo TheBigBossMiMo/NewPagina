@@ -79,3 +79,4 @@ router.put("/:id/read", markAsRead);
 router.delete("/:id", deleteNotification);
 
 module.exports = router;
+

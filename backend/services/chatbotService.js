@@ -170,31 +170,6 @@ const isInDomain = (msg) => {
 const detectIntent = (msg = '') => {
   const m = normalizeText(msg);
 
-    /* SALUDOS */
-    if (
-      m === 'hola' ||
-      m === 'holi' ||
-      m === 'buenas' ||
-      m === 'buenos dias' ||
-      m === 'buen dia' ||
-      m === 'buenas tardes' ||
-      m === 'buenas noches' ||
-      m === 'saludos' ||
-      m === 'adios' ||
-      m === 'adiós' ||
-      m === 'hasta luego' ||
-      m === 'no' ||
-      m === 'si' ||
-      m === 'como estas' ||
-      m === 'que tal' ||
-      m === 'qué tal' ||
-      m === 'como andas' ||
-      m === 'cómo andas' ||
-      m === 'continuar'
-    ) {
-      return { type: 'greeting' };
-    }
-
   if (m === 'mi vehiculo') {
     return { type: 'vehicle_current' };
   }
@@ -599,7 +574,7 @@ const getChatbotReply = async ({ message, email, fullName }) => {
     }
 
     /* FUERA DE DOMINIO */
-    if (!isInDomain(cleanMessage) && intent.type !== 'help' && intent.type !== 'page_guide' && intent.type !== 'greeting') {
+    if (!isInDomain(cleanMessage) && intent.type !== 'help' && intent.type !== 'page_guide') {
       const outOfDomain = getOutOfDomainResponse(cleanMessage);
 
       if (session) {
@@ -611,34 +586,6 @@ const getChatbotReply = async ({ message, email, fullName }) => {
 
       return outOfDomain;
     }
-
-    /* SALUDO */
-    if (intent.type === 'greeting') {
-      const reply =
-        cleanMessage.includes('adios') ||
-        cleanMessage.includes('adiós') ||
-        cleanMessage.includes('hasta luego')
-          ? 'Hasta luego. Cuando quieras, puedo ayudarte con verificación, contingencia, doble Hoy No Circula, calendario, costos y tus vehículos registrados.'
-          : `Hola ${safeName}. Estoy aquí para ayudarte con verificación, contingencia, doble Hoy No Circula, calendario, costos, vehículos registrados y también con el uso de la página.`;
-
-      if (session) {
-        await addToHistory(session, 'assistant', reply);
-        await updateSession(session, {
-          lastOptionsContext: 'greeting'
-        });
-      }
-
-      return {
-        reply,
-        options: buildOptions([
-          { label: 'Verificación', value: 'Verificación' },
-          { label: 'Contingencia', value: 'Contingencia' },
-          { label: 'Mis vehículos', value: '¿Qué vehículos tengo registrados?' },
-          { label: 'Información', value: '¿Dónde puedo ver más información de la página?' }
-        ])
-      };
-    }
-
 
     /* AYUDA */
     if (intent.type === 'help') {
