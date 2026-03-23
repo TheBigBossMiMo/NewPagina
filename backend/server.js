@@ -6,7 +6,6 @@ const cron = require("node-cron");
 
 const authRoutes = require("./routes/authRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const vehicleLookupRoutes = require("./routes/vehicleLookupRoutes");
 const Vehicle = require("./models/Vehicle");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 const chatbotRoutes = require("./routes/chatbotRoutes");
@@ -53,7 +52,6 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/lookup", vehicleLookupRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 

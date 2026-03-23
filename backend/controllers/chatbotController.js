@@ -62,3 +62,5 @@ const handleChatbotMessage = async (req, res) => {
 module.exports = {
   handleChatbotMessage
 };
+
+
