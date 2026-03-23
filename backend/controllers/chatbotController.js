@@ -10,7 +10,8 @@ const handleChatbotMessage = async (req, res) => {
     if (!message || !String(message).trim()) {
       return res.status(400).json({
         ok: false,
-        reply: 'Necesito que me escribas un mensaje.'
+        reply: 'Necesito que me escribas un mensaje.',
+        options: []
       });
     }
 
@@ -18,13 +19,6 @@ const handleChatbotMessage = async (req, res) => {
     // NORMALIZACIÓN
     // =========================
     message = String(message).trim();
-
-    /* Código ejemplo:
-    // Antes:
-    // email: email || ''
-    // fullName: fullName || ''
-    */
-
     email = email ? String(email).trim().toLowerCase() : '';
     fullName = fullName ? String(fullName).trim() : '';
 
@@ -51,16 +45,16 @@ const handleChatbotMessage = async (req, res) => {
     // =========================
     return res.json({
       ok: true,
-      reply: result.reply || 'Sin respuesta.',
-      options: result.options || []
+      reply: result?.reply || 'Sin respuesta.',
+      options: Array.isArray(result?.options) ? result.options : []
     });
-
   } catch (error) {
     console.error('❌ Error en chatbotController:', error);
 
     return res.status(500).json({
       ok: false,
-      reply: 'Ocurrió un error al procesar tu mensaje.'
+      reply: 'Ocurrió un error al procesar tu mensaje.',
+      options: []
     });
   }
 };
