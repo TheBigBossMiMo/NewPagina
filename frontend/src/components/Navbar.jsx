@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 import logo from '../assets/logo.png';
@@ -8,7 +8,14 @@ const API_BASE =
     ? 'http://localhost:3000'
     : 'https://hoynocircula-backend.onrender.com';
 
-const Navbar = () => {
+const Navbar = ({
+  chatNotifications = [],
+  unreadChatCount = 0,
+  hasUnreadChat = false,
+  onRemoveChatNotification,
+  onMarkChatNotificationsAsRead,
+  onOpenChatFromNotification
+}) => {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -30,6 +37,8 @@ const Navbar = () => {
   const hasLoadedNotificationsRef = useRef(false);
   const hasUserInteractedRef = useRef(false);
   const audioContextRef = useRef(null);
+  const shownBrowserNotificationsRef = useRef(new Set());
+  const lastChatNotificationIdRef = useRef(null);
 
   const refreshAuth = () => {
     const token = localStorage.getItem('token');
@@ -88,6 +97,18 @@ const Navbar = () => {
       if (Notification.permission !== 'granted') return;
       if (!document.hidden) return;
 
+      const tagId =
+        notification._id ||
+        notification.id ||
+        notification.uniqueId ||
+        `notification-${Date.now()}`;
+
+      if (shownBrowserNotificationsRef.current.has(tagId)) {
+        return;
+      }
+
+      shownBrowserNotificationsRef.current.add(tagId);
+
       const title =
         notification.title && notification.title.trim()
           ? notification.title
@@ -99,6 +120,8 @@ const Navbar = () => {
           ? 'Recordatorio'
           : notification.type === 'vehiculo'
           ? 'Aviso de vehículo'
+          : notification.type === 'chatbot'
+          ? 'Nuevo mensaje de Soporte Vial'
           : 'Notificación';
 
       const body = notification.message || 'Tienes una nueva notificación.';
@@ -107,12 +130,22 @@ const Navbar = () => {
         body,
         icon: logo,
         badge: logo,
-        tag: notification._id || `notification-${Date.now()}`
+        tag: tagId
       });
 
       browserNotification.onclick = () => {
         window.focus();
         browserNotification.close();
+
+        if (notification.type === 'chatbot' && typeof onOpenChatFromNotification === 'function') {
+          onOpenChatFromNotification();
+        }
+      };
+
+      browserNotification.onclose = () => {
+        setTimeout(() => {
+          shownBrowserNotificationsRef.current.delete(tagId);
+        }, 1500);
       };
     } catch (error) {
       console.error('Error mostrando notificación del navegador:', error);
@@ -120,6 +153,8 @@ const Navbar = () => {
   };
 
   const processIncomingNotifications = (incomingNotifications) => {
+    const safeNotifications = Array.isArray(incomingNotifications) ? incomingNotifications : [];
+
     setNotifications((prevNotifications) => {
       const prevUnreadIds = new Set(
         prevNotifications
@@ -127,7 +162,7 @@ const Navbar = () => {
           .map((notification) => notification._id)
       );
 
-      const newUnreadNotifications = incomingNotifications.filter(
+      const newUnreadNotifications = safeNotifications.filter(
         (notification) => !notification.read && !prevUnreadIds.has(notification._id)
       );
 
@@ -143,7 +178,7 @@ const Navbar = () => {
         hasLoadedNotificationsRef.current = true;
       }
 
-      return Array.isArray(incomingNotifications) ? incomingNotifications : [];
+      return safeNotifications;
     });
   };
 
@@ -168,9 +203,7 @@ const Navbar = () => {
         throw new Error(data.message || 'No se pudieron obtener las notificaciones.');
       }
 
-      processIncomingNotifications(
-        Array.isArray(data.notifications) ? data.notifications : []
-      );
+      processIncomingNotifications(data.notifications);
     } catch (error) {
       console.error('Error obteniendo notificaciones:', error);
       if (!silent) {
@@ -300,6 +333,27 @@ const Navbar = () => {
     return () => clearInterval(intervalId);
   }, [isLoggedIn, sessionUser?.email]);
 
+  useEffect(() => {
+    if (!hasUnreadChat || chatNotifications.length === 0) return;
+
+    const latestChatNotification = chatNotifications[0];
+    const latestId =
+      latestChatNotification?.id ||
+      latestChatNotification?._id ||
+      latestChatNotification?.uniqueId;
+
+    if (!latestId) return;
+    if (lastChatNotificationIdRef.current === latestId) return;
+
+    lastChatNotificationIdRef.current = latestId;
+
+    playNotificationSound();
+    showBrowserNotification({
+      ...latestChatNotification,
+      type: latestChatNotification.type || 'chatbot'
+    });
+  }, [hasUnreadChat, chatNotifications]);
+
   const handleInstallClick = async () => {
     const promptEvent = deferredPrompt || window.deferredPromptEvent || null;
 
@@ -337,6 +391,9 @@ const Navbar = () => {
     setIsMenuOpen(false);
     setIsUserDropdownOpen(false);
     setIsNotificationsOpen(false);
+    hasLoadedNotificationsRef.current = false;
+    shownBrowserNotificationsRef.current.clear();
+    lastChatNotificationIdRef.current = null;
 
     window.dispatchEvent(new Event('auth-changed'));
     navigate('/');
@@ -360,15 +417,37 @@ const Navbar = () => {
     return sessionUser?.email || 'Sin correo';
   };
 
-  const getUnreadCount = () => {
+  const unreadBackendCount = useMemo(() => {
     return notifications.filter((notification) => !notification.read).length;
-  };
+  }, [notifications]);
+
+  const totalUnreadCount = unreadBackendCount + unreadChatCount;
+
+  const mergedNotifications = useMemo(() => {
+    const backendNotifications = notifications.map((notification) => ({
+      ...notification,
+      source: 'backend',
+      uniqueId: `backend-${notification._id}`
+    }));
+
+    const localChatNotifications = chatNotifications.map((notification) => ({
+      ...notification,
+      type: notification.type || 'chatbot',
+      source: 'chat',
+      uniqueId: `chat-${notification.id}`
+    }));
+
+    return [...localChatNotifications, ...backendNotifications].sort(
+      (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+  }, [notifications, chatNotifications]);
 
   const getNotificationIcon = (type) => {
     if (type === 'contingencia') return '🚨';
     if (type === 'doble_hoy_no_circula') return '🚫';
     if (type === 'recordatorio') return '⏰';
     if (type === 'vehiculo') return '🚗';
+    if (type === 'chatbot') return '🤖';
     return '🔔';
   };
 
@@ -381,6 +460,7 @@ const Navbar = () => {
     if (notification.type === 'doble_hoy_no_circula') return 'Doble Hoy No Circula';
     if (notification.type === 'recordatorio') return 'Recordatorio';
     if (notification.type === 'vehiculo') return 'Aviso de vehículo';
+    if (notification.type === 'chatbot') return 'Nuevo mensaje de Soporte Vial';
 
     return 'Notificación';
   };
@@ -406,8 +486,14 @@ const Navbar = () => {
     setIsNotificationsOpen(nextOpen);
     setIsUserDropdownOpen(false);
 
-    if (nextOpen && sessionUser?.email) {
-      await fetchNotifications(sessionUser.email);
+    if (nextOpen) {
+      if (sessionUser?.email) {
+        await fetchNotifications(sessionUser.email);
+      }
+
+      if (typeof onMarkChatNotificationsAsRead === 'function') {
+        onMarkChatNotificationsAsRead();
+      }
     }
   };
 
@@ -448,37 +534,75 @@ const Navbar = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      if (!sessionUser?.email || notifications.length === 0) return;
+      if (sessionUser?.email && notifications.length > 0) {
+        setMarkingAllRead(true);
 
-      setMarkingAllRead(true);
+        const response = await fetch(`${API_BASE}/api/notifications/read-all`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: sessionUser.email
+          })
+        });
 
-      const response = await fetch(`${API_BASE}/api/notifications/read-all`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email: sessionUser.email
-        })
-      });
+        const data = await response.json();
 
-      const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || 'No se pudieron marcar todas como leídas.');
+        }
 
-      if (!response.ok) {
-        throw new Error(data.message || 'No se pudieron marcar todas como leídas.');
+        setNotifications((prev) =>
+          prev.map((notification) => ({
+            ...notification,
+            read: true
+          }))
+        );
       }
 
-      setNotifications((prev) =>
-        prev.map((notification) => ({
-          ...notification,
-          read: true
-        }))
-      );
+      if (typeof onMarkChatNotificationsAsRead === 'function') {
+        onMarkChatNotificationsAsRead();
+      }
     } catch (error) {
       console.error('Error marcando todas como leídas:', error);
     } finally {
       setMarkingAllRead(false);
     }
+  };
+
+  const handleRemoveMergedNotification = (notification) => {
+    if (notification.source === 'chat') {
+      if (typeof onRemoveChatNotification === 'function') {
+        onRemoveChatNotification(notification.id);
+      }
+      return;
+    }
+
+    setNotifications((prev) =>
+      prev.filter((item) => item._id !== notification._id)
+    );
+  };
+
+  const handleChatNotificationClick = (notification) => {
+    if (typeof onMarkChatNotificationsAsRead === 'function') {
+      onMarkChatNotificationsAsRead();
+    }
+
+    if (typeof onOpenChatFromNotification === 'function') {
+      onOpenChatFromNotification();
+    }
+
+    setIsNotificationsOpen(false);
+  };
+
+  const handleNotificationCardClick = async (notification) => {
+    if (notification.source === 'backend') {
+      await handleMarkAsRead(notification._id, notification.read);
+      return;
+    }
+
+    handleChatNotificationClick(notification);
   };
 
   return (
@@ -540,20 +664,28 @@ const Navbar = () => {
         )}
 
         {isLoggedIn && (
-          <>
-            <li>
-              <Link
-                to="/admin"
-                className={`nav-link-pill admin-link ${isActiveRoute(['/admin']) ? 'active-nav-link' : ''}`}
-              >
-                Contingencia
-              </Link>
-            </li>
-          </>
+          <li>
+            <Link
+              to="/admin"
+              className={`nav-link-pill admin-link ${isActiveRoute(['/admin']) ? 'active-nav-link' : ''}`}
+            >
+              Contingencia
+            </Link>
+          </li>
         )}
 
         <li>
-          <button onClick={handleInstallClick} className="btn-descargar" type="button">
+          <button
+            onClick={handleInstallClick}
+            className="btn-descargar"
+            type="button"
+            disabled={!isInstallable}
+            title={
+              isInstallable
+                ? 'Instalar aplicación'
+                : 'La instalación aún no está disponible'
+            }
+          >
             ⬇️ App
           </button>
         </li>
@@ -566,15 +698,15 @@ const Navbar = () => {
             >
               <button
                 type="button"
-                className="navbar-icon-btn"
+                className={`navbar-icon-btn ${totalUnreadCount > 0 ? 'navbar-icon-btn-alert' : ''}`}
                 aria-label="Notificaciones"
                 title="Notificaciones"
                 onClick={handleOpenNotifications}
               >
                 🔔
-                {getUnreadCount() > 0 && (
+                {totalUnreadCount > 0 && (
                   <span className="navbar-notification-badge">
-                    {getUnreadCount() > 9 ? '9+' : getUnreadCount()}
+                    {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
                   </span>
                 )}
               </button>
@@ -585,13 +717,13 @@ const Navbar = () => {
                     <div>
                       <strong>Notificaciones</strong>
                       <span>
-                        {getUnreadCount() > 0
-                          ? `${getUnreadCount()} sin leer`
+                        {totalUnreadCount > 0
+                          ? `${totalUnreadCount} sin leer`
                           : 'Todo al día'}
                       </span>
                     </div>
 
-                    {notifications.length > 0 && (
+                    {mergedNotifications.length > 0 && (
                       <button
                         type="button"
                         className="mark-all-read-btn"
@@ -608,25 +740,31 @@ const Navbar = () => {
                       <div className="navbar-notification-empty">
                         Cargando notificaciones...
                       </div>
-                    ) : notifications.length === 0 ? (
+                    ) : mergedNotifications.length === 0 ? (
                       <div className="navbar-notification-empty">
                         No tienes notificaciones por el momento.
                       </div>
                     ) : (
-                      notifications.map((notification) => (
-                        <button
-                          key={notification._id}
-                          type="button"
+                      mergedNotifications.map((notification) => (
+                        <div
+                          key={notification.uniqueId}
                           className={`navbar-notification-card ${notification.read ? 'read' : 'unread'}`}
-                          onClick={() =>
-                            handleMarkAsRead(notification._id, notification.read)
-                          }
                         >
                           <div className="navbar-notification-icon">
                             {getNotificationIcon(notification.type)}
                           </div>
 
-                          <div className="navbar-notification-content">
+                          <div
+                            className="navbar-notification-content navbar-notification-clickable"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleNotificationCardClick(notification)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                handleNotificationCardClick(notification);
+                              }
+                            }}
+                          >
                             <div className="navbar-notification-topline">
                               <strong>{getNotificationTitle(notification)}</strong>
                               {!notification.read && (
@@ -641,7 +779,17 @@ const Navbar = () => {
                               {formatNotificationDate(notification.createdAt)}
                             </small>
                           </div>
-                        </button>
+
+                          <button
+                            type="button"
+                            className="navbar-notification-remove-btn"
+                            title="Eliminar notificación"
+                            aria-label="Eliminar notificación"
+                            onClick={() => handleRemoveMergedNotification(notification)}
+                          >
+                            ✕
+                          </button>
+                        </div>
                       ))
                     )}
                   </div>
