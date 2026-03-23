@@ -4,10 +4,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
-const vehicleLookupRoutes = require("./routes/vehicleLookupRoutes");
 const Vehicle = require("./models/Vehicle");
-const vehicleRoutes = require("./routes/vehicleRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,9 +47,6 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/notifications", notificationRoutes);
-app.use("/api/lookup", vehicleLookupRoutes);
-app.use("/api/vehicles", vehicleRoutes);
 
 /* =========================
    FUNCIONES AUXILIARES
@@ -70,11 +64,7 @@ const normalizeState = (value = "") => {
   const clean = value.toUpperCase().trim();
 
   if (clean === "CDMX") return "CDMX";
-  if (
-    clean === "EDOMEX" ||
-    clean === "ESTADO DE MEXICO" ||
-    clean === "ESTADO DE MÉXICO"
-  ) {
+  if (clean === "EDOMEX" || clean === "ESTADO DE MEXICO" || clean === "ESTADO DE MÉXICO") {
     return "EDOMEX";
   }
 
@@ -116,8 +106,177 @@ const getSaturdayNumberInMonth = (date) => {
   return Math.ceil(date.getDate() / 7);
 };
 
+const formatDate = (date) => {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const getEngomadoByDigit = (digit) => {
+  if ([5, 6].includes(digit)) return "Amarillo";
+  if ([7, 8].includes(digit)) return "Rosa";
+  if ([3, 4].includes(digit)) return "Rojo";
+  if ([1, 2].includes(digit)) return "Verde";
+  if ([9, 0].includes(digit)) return "Azul";
+  return "Sin dato";
+};
+
+const getVerificationPeriodsByEngomado = (engomado, year) => {
+  const map = {
+    Amarillo: [
+      {
+        name: "Primer semestre",
+        periodoActual: "Enero - Febrero",
+        start: new Date(year, 0, 1),
+        end: new Date(year, 1, 28)
+      },
+      {
+        name: "Segundo semestre",
+        periodoActual: "Julio - Agosto",
+        start: new Date(year, 6, 1),
+        end: new Date(year, 7, 31)
+      }
+    ],
+    Rosa: [
+      {
+        name: "Primer semestre",
+        periodoActual: "Febrero - Marzo",
+        start: new Date(year, 1, 1),
+        end: new Date(year, 2, 31)
+      },
+      {
+        name: "Segundo semestre",
+        periodoActual: "Agosto - Septiembre",
+        start: new Date(year, 7, 1),
+        end: new Date(year, 8, 30)
+      }
+    ],
+    Rojo: [
+      {
+        name: "Primer semestre",
+        periodoActual: "Marzo - Abril",
+        start: new Date(year, 2, 1),
+        end: new Date(year, 3, 30)
+      },
+      {
+        name: "Segundo semestre",
+        periodoActual: "Septiembre - Octubre",
+        start: new Date(year, 8, 1),
+        end: new Date(year, 9, 31)
+      }
+    ],
+    Verde: [
+      {
+        name: "Primer semestre",
+        periodoActual: "Abril - Mayo",
+        start: new Date(year, 3, 1),
+        end: new Date(year, 4, 31)
+      },
+      {
+        name: "Segundo semestre",
+        periodoActual: "Octubre - Noviembre",
+        start: new Date(year, 9, 1),
+        end: new Date(year, 10, 30)
+      }
+    ],
+    Azul: [
+      {
+        name: "Primer semestre",
+        periodoActual: "Mayo - Junio",
+        start: new Date(year, 4, 1),
+        end: new Date(year, 5, 30)
+      },
+      {
+        name: "Segundo semestre",
+        periodoActual: "Noviembre - Diciembre",
+        start: new Date(year, 10, 1),
+        end: new Date(year, 11, 31)
+      }
+    ]
+  };
+
+  return map[engomado] || [];
+};
+
+const buildVerificationData = ({ plate, holograma, modelo, estado }) => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const lastDigit = getLastNumericDigit(plate);
+  const engomado = getEngomadoByDigit(lastDigit);
+  const periods = getVerificationPeriodsByEngomado(engomado, currentYear);
+
+  const activePeriod = periods.find((period) => now >= period.start && now <= period.end);
+  let nextPeriod = periods.find((period) => now < period.start);
+
+  if (!nextPeriod && periods.length > 0) {
+    const nextYearPeriods = getVerificationPeriodsByEngomado(engomado, currentYear + 1);
+    nextPeriod = nextYearPeriods[0] || null;
+  }
+
+  const isExempt = holograma === "00" || holograma === "0";
+
+  let estatus = "Al corriente";
+  let debeVerificar = "No";
+  let motivo = "Hoy puedes circular sin problema.";
+  let periodoActual = activePeriod ? activePeriod.periodoActual : "Sin dato";
+  let periodoSiguiente = nextPeriod ? nextPeriod.periodoActual : "Por definir";
+  let meses = activePeriod
+    ? activePeriod.periodoActual
+    : nextPeriod
+      ? nextPeriod.periodoActual
+      : "Sin dato";
+  let fechaLimite = activePeriod
+    ? formatDate(activePeriod.end)
+    : nextPeriod
+      ? formatDate(nextPeriod.end)
+      : "Sin dato";
+  let costoEstimado = isExempt ? "Exento temporalmente" : "$738 MXN aprox.";
+  let nota = isExempt
+    ? "El vehículo cuenta con holograma exento o de baja restricción. Verifica vigencia específica en tu entidad."
+    : "La información mostrada es una orientación calculada con base en terminación, engomado y holograma.";
+
+  if (isExempt) {
+    estatus = "Exento";
+    debeVerificar = "No";
+    motivo = "Tu vehículo puede estar exento o con restricción reducida según el holograma registrado.";
+  } else if (activePeriod) {
+    estatus = "En periodo";
+    debeVerificar = "Sí";
+    motivo = `Tu vehículo se encuentra dentro del periodo de verificación ${activePeriod.periodoActual}.`;
+  } else if (nextPeriod) {
+    estatus = "Próximo periodo";
+    debeVerificar = "Sí";
+    motivo = `Tu próxima ventana estimada de verificación es ${nextPeriod.periodoActual}.`;
+  }
+
+  const documentos = [
+    "Tarjeta de circulación",
+    "Comprobante de última verificación",
+    "Identificación oficial",
+    "Pago correspondiente en caso de aplicar"
+  ];
+
+  return {
+    modelo: modelo || "Sin dato",
+    estado,
+    engomado,
+    terminacion: lastDigit !== null ? String(lastDigit) : "Sin dato",
+    periodoActual,
+    periodoSiguiente,
+    meses,
+    fechaLimite,
+    costoEstimado,
+    estatus,
+    debeVerificar,
+    motivo,
+    nota,
+    documentos
+  };
+};
+
 const evaluateCirculation = ({ plate, holograma }) => {
-  const diaActual = new Date().getDay(); // 0=Dom, 1=Lun ... 6=Sab
+  const diaActual = new Date().getDay();
   const ultimoDigito = getLastNumericDigit(plate);
 
   if (ultimoDigito === null || Number.isNaN(ultimoDigito)) {
@@ -128,11 +287,11 @@ const evaluateCirculation = ({ plate, holograma }) => {
   }
 
   const dayRule = {
-    1: [5, 6], // Lunes
-    2: [7, 8], // Martes
-    3: [3, 4], // Miércoles
-    4: [1, 2], // Jueves
-    5: [9, 0]  // Viernes
+    1: [5, 6],
+    2: [7, 8],
+    3: [3, 4],
+    4: [1, 2],
+    5: [9, 0]
   };
 
   if (diaActual === 0) {
@@ -227,6 +386,9 @@ app.post("/api/vehicles", async (req, res) => {
     const placaNormalizada = normalizeRawPlate(req.body.placa || "");
     const modelo = Number(req.body.modelo);
     const holograma = String(req.body.holograma || "").trim();
+    const marca = String(req.body.marca || "").trim();
+    const submodelo = String(req.body.submodelo || "").trim();
+    const color = String(req.body.color || "").trim();
 
     if (!entidad) {
       return res.status(400).json({
@@ -266,13 +428,22 @@ app.post("/api/vehicles", async (req, res) => {
       });
     }
 
-    const vehicle = new Vehicle({
+    const vehicleData = {
       entidad,
       placa,
       placaNormalizada,
       modelo,
-      holograma
-    });
+      holograma,
+      marca,
+      submodelo,
+      color
+    };
+
+    if (req.body.ownerEmail) vehicleData.ownerEmail = req.body.ownerEmail;
+    if (req.body.ownerFullName) vehicleData.ownerFullName = req.body.ownerFullName;
+    if (req.body.imagen) vehicleData.imagen = req.body.imagen;
+
+    const vehicle = new Vehicle(vehicleData);
 
     await vehicle.save();
 
@@ -286,169 +457,6 @@ app.post("/api/vehicles", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Error del servidor al registrar el vehículo."
-    });
-  }
-});
-
-/* =========================
-   VER VEHÍCULOS
-========================= */
-
-app.get("/api/vehicles", async (req, res) => {
-  try {
-    const vehicles = await Vehicle.find().sort({ createdAt: -1 });
-
-    return res.json({
-      success: true,
-      vehicles
-    });
-  } catch (error) {
-    console.error("Error obteniendo vehículos:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error del servidor al obtener los vehículos."
-    });
-  }
-});
-
-/* =========================
-   VER UN VEHÍCULO POR ID
-========================= */
-
-app.get("/api/vehicles/:id", async (req, res) => {
-  try {
-    const vehicle = await Vehicle.findById(req.params.id);
-
-    if (!vehicle) {
-      return res.status(404).json({
-        success: false,
-        message: "Vehículo no encontrado."
-      });
-    }
-
-    return res.json({
-      success: true,
-      vehicle
-    });
-  } catch (error) {
-    console.error("Error obteniendo vehículo por ID:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error del servidor al obtener el vehículo."
-    });
-  }
-});
-
-/* =========================
-   EDITAR VEHÍCULO
-========================= */
-
-app.put("/api/vehicles/:id", async (req, res) => {
-  try {
-    const currentYear = new Date().getFullYear();
-    const maxModelYear = currentYear + 2;
-
-    const entidad = normalizeState(req.body.entidad || "");
-    const placa = normalizePlate(req.body.placa || "");
-    const placaNormalizada = normalizeRawPlate(req.body.placa || "");
-    const modelo = Number(req.body.modelo);
-    const holograma = String(req.body.holograma || "").trim();
-
-    if (!entidad) {
-      return res.status(400).json({
-        message: "Selecciona una entidad válida."
-      });
-    }
-
-    if (!placa || !isValidPlateFormatByState(placa, entidad)) {
-      return res.status(400).json({
-        message:
-          entidad === "CDMX"
-            ? "La placa no coincide con un formato válido de CDMX."
-            : "La placa no coincide con un formato válido del Estado de México."
-      });
-    }
-
-    if (!Number.isFinite(modelo) || modelo < 1950 || modelo > maxModelYear) {
-      return res.status(400).json({
-        message: `El modelo debe estar entre 1950 y ${maxModelYear}.`
-      });
-    }
-
-    if (!["00", "0", "1", "2"].includes(holograma)) {
-      return res.status(400).json({
-        message: "Selecciona un holograma válido."
-      });
-    }
-
-    const vehicle = await Vehicle.findById(req.params.id);
-
-    if (!vehicle) {
-      return res.status(404).json({
-        success: false,
-        message: "Vehículo no encontrado."
-      });
-    }
-
-    const existingVehicle = await Vehicle.findOne({
-      entidad,
-      placaNormalizada,
-      _id: { $ne: req.params.id }
-    });
-
-    if (existingVehicle) {
-      return res.status(409).json({
-        success: false,
-        message: "Ya existe otro vehículo con esa placa en esa entidad."
-      });
-    }
-
-    vehicle.entidad = entidad;
-    vehicle.placa = placa;
-    vehicle.placaNormalizada = placaNormalizada;
-    vehicle.modelo = modelo;
-    vehicle.holograma = holograma;
-
-    await vehicle.save();
-
-    return res.json({
-      success: true,
-      message: "Vehículo actualizado correctamente.",
-      vehicle
-    });
-  } catch (error) {
-    console.error("Error actualizando vehículo:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error del servidor al actualizar el vehículo."
-    });
-  }
-});
-
-/* =========================
-   ELIMINAR VEHÍCULO
-========================= */
-
-app.delete("/api/vehicles/:id", async (req, res) => {
-  try {
-    const vehicle = await Vehicle.findByIdAndDelete(req.params.id);
-
-    if (!vehicle) {
-      return res.status(404).json({
-        success: false,
-        message: "Vehículo no encontrado."
-      });
-    }
-
-    return res.json({
-      success: true,
-      message: "Vehículo eliminado correctamente."
-    });
-  } catch (error) {
-    console.error("Error eliminando vehículo:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error del servidor al eliminar el vehículo."
     });
   }
 });
@@ -498,13 +506,12 @@ app.get("/api/circula/:placa", async (req, res) => {
             $or: [
               { placa: placaParam },
               { placa: placaSinGuiones },
-              { matricula: placaParam },
-              { matricula: placaSinGuiones }
+              { placaNormalizada }
             ]
           },
           {
             $or: [
-              { estado: estado },
+              { estado },
               { entidad: estado }
             ]
           }
@@ -516,10 +523,30 @@ app.get("/api/circula/:placa", async (req, res) => {
         found: false,
         placa: placaParam,
         estado,
+        entidad: estado,
         mensaje:
-          "No encontramos esta matrícula en la base de datos. Inicia sesión o regístrate para registrar tu vehículo."
+          "No encontramos esta matrícula en la base de datos. Inicia sesión o regístrate para registrar tu vehículo.",
+        modelo: "Sin dato",
+        holograma,
+        marca: "Sin dato",
+        submodelo: "Sin dato",
+        color: "Sin dato",
+        engomado: "Sin dato",
+        terminacion: "Sin dato",
+        periodoActual: "Sin dato",
+        periodoSiguiente: "Por definir",
+        meses: "Sin dato",
+        fechaLimite: "Sin dato",
+        costoEstimado: "Sin dato",
+        estatus: "Sin registro",
+        debeVerificar: "No",
+        motivo: "No hay información suficiente porque el vehículo no está registrado.",
+        nota: "Registra el vehículo para obtener información más completa.",
+        documentos: []
       });
     }
+
+    console.log("VEHICLE ENCONTRADO:", vehicle);
 
     const hologramaFinal = vehicle.holograma || holograma;
     const circulation = evaluateCirculation({
@@ -527,13 +554,52 @@ app.get("/api/circula/:placa", async (req, res) => {
       holograma: hologramaFinal
     });
 
+    const verificationData = buildVerificationData({
+      plate: vehicle.placa || placaParam,
+      holograma: hologramaFinal,
+      modelo: vehicle.modelo,
+      estado: vehicle.entidad || vehicle.estado || estado
+    });
+
+    const marcaFinal =
+      typeof vehicle.marca === "string" && vehicle.marca.trim()
+        ? vehicle.marca.trim()
+        : "Sin dato";
+
+    const submodeloFinal =
+      typeof vehicle.submodelo === "string" && vehicle.submodelo.trim()
+        ? vehicle.submodelo.trim()
+        : "Sin dato";
+
+    const colorFinal =
+      typeof vehicle.color === "string" && vehicle.color.trim()
+        ? vehicle.color.trim()
+        : "Sin dato";
+
     return res.json({
       found: true,
       placa: vehicle.placa || placaParam,
       estado: vehicle.entidad || vehicle.estado || estado,
+      entidad: vehicle.entidad || vehicle.estado || estado,
+      modelo: vehicle.modelo || "Sin dato",
       holograma: hologramaFinal,
+      marca: marcaFinal,
+      submodelo: submodeloFinal,
+      color: colorFinal,
       circula: circulation.circula,
-      mensaje: circulation.mensaje
+      mensaje: circulation.mensaje,
+      engomado: verificationData.engomado,
+      terminacion: verificationData.terminacion,
+      periodoActual: verificationData.periodoActual,
+      periodoSiguiente: verificationData.periodoSiguiente,
+      meses: verificationData.meses,
+      fechaLimite: verificationData.fechaLimite,
+      costoEstimado: verificationData.costoEstimado,
+      estatus: verificationData.estatus,
+      debeVerificar: verificationData.debeVerificar,
+      motivo: verificationData.motivo,
+      nota: verificationData.nota,
+      documentos: verificationData.documentos
     });
   } catch (error) {
     console.error("Error en /api/circula:", error);

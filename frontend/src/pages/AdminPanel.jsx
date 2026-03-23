@@ -49,7 +49,15 @@ const normalizeText = (value) =>
 
 const isTruthyVerification = (value) => {
   const normalized = normalizeText(value);
-  return normalized === 'si' || normalized === 'sí';
+  return (
+    normalized === 'si' ||
+    normalized === 'sí' ||
+    normalized === 'true' ||
+    normalized === '1' ||
+    normalized === 'pendiente' ||
+    normalized === 'vencido' ||
+    normalized === 'requiere verificacion'
+  );
 };
 
 const isExemptStatus = (verification) => {
@@ -102,6 +110,89 @@ const buildStatusMeta = (vehicle, verification) => {
   };
 };
 
+const safeParseJson = async (response) => {
+  const rawText = await response.text();
+
+  if (!rawText) {
+    return null;
+  }
+
+  const trimmed = rawText.trim();
+
+  if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html')) {
+    throw new Error(
+      'El backend respondió HTML en lugar de JSON. Revisa que la ruta exista y que el servidor local esté corriendo correctamente.'
+    );
+  }
+
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    throw new Error('La respuesta del servidor no es JSON válido.');
+  }
+};
+
+const inferShouldVerify = (data = {}) => {
+  const estatus = normalizeText(data.estatus || data.status || '');
+  const motivo = normalizeText(data.motivo || data.message || data.mensaje || data.nota || '');
+
+  return (
+    estatus.includes('pendiente') ||
+    estatus.includes('venc') ||
+    estatus.includes('requiere') ||
+    motivo.includes('verificar') ||
+    motivo.includes('pendiente') ||
+    motivo.includes('venc')
+  );
+};
+
+const mapCirculaResponse = (data, cleanPlate, selectedState) => {
+  const fallbackDocs = [
+    'Tarjeta de circulación',
+    'Comprobante de última verificación',
+    'Identificación oficial',
+    'Pago correspondiente en caso de aplicar'
+  ];
+
+  const shouldVerify =
+    typeof data?.debeVerificar !== 'undefined'
+      ? data.debeVerificar
+      : inferShouldVerify(data);
+
+  return {
+    vehicle: {
+      placa: data?.placa || cleanPlate,
+      modelo: data?.modelo || data?.anio || data?.año || 'Sin dato',
+      holograma: data?.holograma || 'Sin dato',
+      entidad: data?.entidad || data?.estado || selectedState || 'CDMX',
+      marca: data?.marca || 'Sin dato',
+      submodelo: data?.submodelo || 'Sin dato',
+      color: data?.color || 'Sin dato'
+    },
+    verification: {
+      estatus: data?.estatus || data?.status || (shouldVerify ? 'Pendiente' : 'Al corriente'),
+      debeVerificar: shouldVerify ? 'Sí' : 'No',
+      motivo:
+        data?.motivo ||
+        data?.message ||
+        data?.mensaje ||
+        data?.nota ||
+        (shouldVerify
+          ? 'El vehículo requiere revisión de verificación.'
+          : 'No se encontró un requerimiento de verificación inmediato.'),
+      terminacion: data?.terminacion || cleanPlate.slice(-1) || 'Sin dato',
+      engomado: data?.engomado || 'Sin dato',
+      periodoActual: data?.periodoActual || data?.periodo || 'Sin dato',
+      periodoSiguiente: data?.periodoSiguiente || 'Por definir',
+      meses: data?.meses || 'Sin dato',
+      fechaLimite: data?.fechaLimite || 'Sin dato',
+      costoEstimado: data?.costoEstimado || 'Sin dato',
+      nota: data?.nota || data?.observaciones || 'Información obtenida desde la consulta local.',
+      documentos: Array.isArray(data?.documentos) ? data.documentos : fallbackDocs
+    }
+  };
+};
+
 const AdminPanel = () => {
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -109,6 +200,7 @@ const AdminPanel = () => {
   const [showContingencyModal, setShowContingencyModal] = useState(false);
 
   const [plate, setPlate] = useState('');
+  const [entity, setEntity] = useState('CDMX');
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [lookupVehicle, setLookupVehicle] = useState(null);
@@ -116,6 +208,7 @@ const AdminPanel = () => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
   const [statusPlate, setStatusPlate] = useState('');
+  const [statusEntity, setStatusEntity] = useState('CDMX');
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState('');
   const [statusVehicle, setStatusVehicle] = useState(null);
@@ -194,6 +287,7 @@ const AdminPanel = () => {
 
   const handleResetLookup = () => {
     setPlate('');
+    setEntity('CDMX');
     setLookupError('');
     setLookupVehicle(null);
     setLookupVerification(null);
@@ -202,33 +296,71 @@ const AdminPanel = () => {
 
   const handleResetStatusLookup = () => {
     setStatusPlate('');
+    setStatusEntity('CDMX');
     setStatusError('');
     setStatusVehicle(null);
     setStatusVerification(null);
     setShowStatusModal(false);
   };
 
-  const fetchVehicleLookup = async (rawPlate) => {
+  const fetchVehicleLookup = async (rawPlate, selectedState = 'CDMX') => {
     const cleanPlate = rawPlate.trim().toUpperCase();
+    const cleanState = String(selectedState || '').trim().toUpperCase();
 
     if (!cleanPlate) {
       throw new Error('Ingresa una placa para consultar.');
     }
 
-    const response = await fetch(
-      `${API_BASE}/api/lookup/vehicle/${encodeURIComponent(cleanPlate)}`
-    );
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.message || 'No fue posible consultar el vehículo.');
+    if (!cleanState || !['CDMX', 'EDOMEX'].includes(cleanState)) {
+      throw new Error('Debes seleccionar una entidad válida: CDMX o EDOMEX.');
     }
 
-    return {
-      vehicle: data.vehicle || null,
-      verification: data.verification || null
-    };
+    const endpoint = `${API_BASE}/api/circula/${encodeURIComponent(
+      cleanPlate
+    )}?estado=${encodeURIComponent(cleanState)}`;
+
+    let response;
+    try {
+      response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json'
+        }
+      });
+    } catch {
+      throw new Error('No fue posible conectar con el servidor local.');
+    }
+
+    const data = await safeParseJson(response);
+
+    if (!response.ok) {
+      const serverMessage =
+        data?.message ||
+        data?.error ||
+        `No fue posible consultar el vehículo. Código ${response.status}.`;
+      throw new Error(serverMessage);
+    }
+
+    if (data?.success && (data?.vehicle || data?.verification)) {
+      return {
+        vehicle: {
+          placa: data?.vehicle?.placa || cleanPlate,
+          modelo: data?.vehicle?.modelo || 'Sin dato',
+          holograma: data?.vehicle?.holograma || 'Sin dato',
+          entidad: data?.vehicle?.entidad || cleanState,
+          marca: data?.vehicle?.marca || 'Sin dato',
+          submodelo: data?.vehicle?.submodelo || 'Sin dato',
+          color: data?.vehicle?.color || 'Sin dato'
+        },
+        verification: data.verification || null
+      };
+    }
+
+    if (data && typeof data === 'object') {
+      return mapCirculaResponse(data, cleanPlate, cleanState);
+    }
+
+    throw new Error('La respuesta del servidor no contiene información válida.');
   };
 
   const handleLookupVehicle = async (e) => {
@@ -240,7 +372,7 @@ const AdminPanel = () => {
       setLookupVehicle(null);
       setLookupVerification(null);
 
-      const result = await fetchVehicleLookup(plate);
+      const result = await fetchVehicleLookup(plate, entity);
 
       setLookupVehicle(result.vehicle);
       setLookupVerification(result.verification);
@@ -262,7 +394,7 @@ const AdminPanel = () => {
       setStatusVehicle(null);
       setStatusVerification(null);
 
-      const result = await fetchVehicleLookup(statusPlate);
+      const result = await fetchVehicleLookup(statusPlate, statusEntity);
 
       setStatusVehicle(result.vehicle);
       setStatusVerification(result.verification);
@@ -544,6 +676,21 @@ const AdminPanel = () => {
                     <span>Entidad</span>
                     <strong>{lookupVehicle.entidad}</strong>
                   </div>
+
+                  <div className="vehicle-result-card">
+                    <span>Marca</span>
+                    <strong>{lookupVehicle.marca}</strong>
+                  </div>
+
+                  <div className="vehicle-result-card">
+                    <span>Submodelo</span>
+                    <strong>{lookupVehicle.submodelo}</strong>
+                  </div>
+
+                  <div className="vehicle-result-card vehicle-result-card-full">
+                    <span>Color</span>
+                    <strong>{lookupVehicle.color}</strong>
+                  </div>
                 </div>
               </div>
 
@@ -699,6 +846,18 @@ const AdminPanel = () => {
                 <div className="vehicle-status-quick-chip">
                   <span>Holograma</span>
                   <strong>{statusVehicle.holograma}</strong>
+                </div>
+                <div className="vehicle-status-quick-chip">
+                  <span>Marca</span>
+                  <strong>{statusVehicle.marca}</strong>
+                </div>
+                <div className="vehicle-status-quick-chip">
+                  <span>Submodelo</span>
+                  <strong>{statusVehicle.submodelo}</strong>
+                </div>
+                <div className="vehicle-status-quick-chip">
+                  <span>Color</span>
+                  <strong>{statusVehicle.color}</strong>
                 </div>
               </div>
 
@@ -867,12 +1026,27 @@ const AdminPanel = () => {
                       />
                     </div>
 
+                    <div className="vehicle-field vehicle-field-full">
+                      <label htmlFor="vehicle-lookup-entity">Entidad</label>
+                      <select
+                        id="vehicle-lookup-entity"
+                        value={entity}
+                        onChange={(e) => {
+                          setEntity(e.target.value);
+                          if (lookupError) setLookupError('');
+                        }}
+                      >
+                        <option value="CDMX">CDMX</option>
+                        <option value="EDOMEX">EDOMEX</option>
+                      </select>
+                    </div>
+
                     {lookupError && (
                       <small className="vehicle-error">{lookupError}</small>
                     )}
 
                     <div className="vehicle-actions vehicle-actions-center">
-                      <button type="submit" className="section-action-btn">
+                      <button type="submit" className="section-action-btn" disabled={lookupLoading}>
                         {lookupLoading ? 'Consultando...' : 'Consultar vehículo'}
                       </button>
 
@@ -922,12 +1096,27 @@ const AdminPanel = () => {
                       />
                     </div>
 
+                    <div className="vehicle-field vehicle-field-full">
+                      <label htmlFor="vehicle-status-entity">Entidad</label>
+                      <select
+                        id="vehicle-status-entity"
+                        value={statusEntity}
+                        onChange={(e) => {
+                          setStatusEntity(e.target.value);
+                          if (statusError) setStatusError('');
+                        }}
+                      >
+                        <option value="CDMX">CDMX</option>
+                        <option value="EDOMEX">EDOMEX</option>
+                      </select>
+                    </div>
+
                     {statusError && (
                       <small className="vehicle-error">{statusError}</small>
                     )}
 
                     <div className="vehicle-actions vehicle-actions-center">
-                      <button type="submit" className="section-action-btn">
+                      <button type="submit" className="section-action-btn" disabled={statusLoading}>
                         {statusLoading ? 'Consultando...' : 'Consultar estado'}
                       </button>
 
