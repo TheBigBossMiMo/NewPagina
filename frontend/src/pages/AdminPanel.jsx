@@ -1320,4 +1320,8 @@ const AdminPanel = () => {
   );
 };
 
+<<<<<<< HEAD
 export default AdminPanel;
+=======
+export default AdminPanel;  
+>>>>>>> 3c4045e (se agregan cambios)
