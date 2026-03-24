@@ -10,7 +10,7 @@ const API_BASE =
   window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
     : 'https://hoynocircula-backend.onrender.com';
-   
+
 const imageSections = [
   {
     id: 1,
@@ -126,7 +126,7 @@ const safeParseJson = async (response) => {
   }
 
   try {
-    return JSON.parse(rawText);
+    return JSON.parse(trimmed);
   } catch {
     throw new Error('La respuesta del servidor no es JSON válido.');
   }
@@ -134,7 +134,9 @@ const safeParseJson = async (response) => {
 
 const inferShouldVerify = (data = {}) => {
   const estatus = normalizeText(data.estatus || data.status || '');
-  const motivo = normalizeText(data.motivo || data.message || data.mensaje || data.nota || '');
+  const motivo = normalizeText(
+    data.motivo || data.message || data.mensaje || data.nota || ''
+  );
 
   return (
     estatus.includes('pendiente') ||
@@ -170,7 +172,8 @@ const mapCirculaResponse = (data, cleanPlate, selectedState) => {
       color: data?.color || 'Sin dato'
     },
     verification: {
-      estatus: data?.estatus || data?.status || (shouldVerify ? 'Pendiente' : 'Al corriente'),
+      estatus:
+        data?.estatus || data?.status || (shouldVerify ? 'Pendiente' : 'Al corriente'),
       debeVerificar: shouldVerify ? 'Sí' : 'No',
       motivo:
         data?.motivo ||
@@ -187,48 +190,15 @@ const mapCirculaResponse = (data, cleanPlate, selectedState) => {
       meses: data?.meses || 'Sin dato',
       fechaLimite: data?.fechaLimite || 'Sin dato',
       costoEstimado: data?.costoEstimado || 'Sin dato',
-      nota: data?.nota || data?.observaciones || 'Información obtenida desde la consulta local.',
-      documentos: Array.isArray(data?.documentos) ? data.documentos : fallbackDocs
+      nota:
+        data?.nota ||
+        data?.observaciones ||
+        'Información obtenida desde la consulta local.',
+      documentos: Array.isArray(data?.documentos)
+        ? data.documentos
+        : fallbackDocs
     }
   };
-const normalizeLookupResponse = (data, cleanPlate, cleanState) => {
-  const payload = data?.data || data;
-
-  const vehicle =
-    payload?.vehicle ||
-    payload?.vehiculo || {
-      placa: payload?.placa || cleanPlate,
-      modelo: payload?.modelo || payload?.marca || 'Sin información',
-      holograma: payload?.holograma || 'Sin información',
-      entidad: payload?.entidad || payload?.estado || cleanState || 'Sin información'
-    };
-
-  const verification =
-    payload?.verification ||
-    payload?.verificacion || {
-      estatus: payload?.estatus || (payload?.circula ? 'Puede circular' : 'Restricción activa'),
-      debeVerificar:
-        payload?.debeVerificar ??
-        payload?.debe_verificar ??
-        payload?.requiereVerificacion ??
-        (payload?.circula ? 'No' : 'Sí'),
-      motivo:
-        payload?.motivo ||
-        payload?.mensaje ||
-        payload?.razon ||
-        'Consulta procesada correctamente.',
-      terminacion: payload?.terminacion || 'Sin información',
-      engomado: payload?.engomado || 'Sin información',
-      periodoActual: payload?.periodoActual || payload?.periodo || 'Sin información',
-      periodoSiguiente: payload?.periodoSiguiente || 'Sin información',
-      meses: payload?.meses || 'Sin información',
-      fechaLimite: payload?.fechaLimite || 'Sin información',
-      costoEstimado: payload?.costoEstimado || 'Sin información',
-      nota: payload?.nota || payload?.mensaje || 'Sin información',
-      documentos: Array.isArray(payload?.documentos) ? payload.documentos : []
-    };
-
-  return { vehicle, verification };
 };
 
 const AdminPanel = () => {
@@ -239,7 +209,6 @@ const AdminPanel = () => {
 
   const [plate, setPlate] = useState('');
   const [entity, setEntity] = useState('CDMX');
-  const [lookupState, setLookupState] = useState('');
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState('');
   const [lookupVehicle, setLookupVehicle] = useState(null);
@@ -248,7 +217,6 @@ const AdminPanel = () => {
 
   const [statusPlate, setStatusPlate] = useState('');
   const [statusEntity, setStatusEntity] = useState('CDMX');
-  const [statusState, setStatusState] = useState('');
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState('');
   const [statusVehicle, setStatusVehicle] = useState(null);
@@ -328,8 +296,6 @@ const AdminPanel = () => {
   const handleResetLookup = () => {
     setPlate('');
     setEntity('CDMX');
-
-    setLookupState('');
     setLookupError('');
     setLookupVehicle(null);
     setLookupVerification(null);
@@ -339,8 +305,6 @@ const AdminPanel = () => {
   const handleResetStatusLookup = () => {
     setStatusPlate('');
     setStatusEntity('CDMX');
-
-    setStatusState('');
     setStatusError('');
     setStatusVehicle(null);
     setStatusVerification(null);
@@ -348,11 +312,8 @@ const AdminPanel = () => {
   };
 
   const fetchVehicleLookup = async (rawPlate, selectedState = 'CDMX') => {
-    const cleanPlate = rawPlate.trim().toUpperCase();
-    const cleanState = String(selectedState || '').trim().toUpperCase();
-  const fetchVehicleLookup = async (rawPlate, rawState) => {
     const cleanPlate = String(rawPlate || '').trim().toUpperCase();
-    const cleanState = String(rawState || '').trim().toUpperCase();
+    const cleanState = String(selectedState || '').trim().toUpperCase();
 
     if (!cleanPlate) {
       throw new Error('Ingresa una placa para consultar.');
@@ -399,7 +360,7 @@ const AdminPanel = () => {
           submodelo: data?.vehicle?.submodelo || 'Sin dato',
           color: data?.vehicle?.color || 'Sin dato'
         },
-        verification: data.verification || null
+        verification: data?.verification || null
       };
     }
 
@@ -408,45 +369,6 @@ const AdminPanel = () => {
     }
 
     throw new Error('La respuesta del servidor no contiene información válida.');
-
-    const response = await fetch(
-      `${API_BASE}/api/circula/${encodeURIComponent(cleanPlate)}?estado=${encodeURIComponent(cleanState)}`,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json'
-        }
-      }
-    );
-
-    const contentType = response.headers.get('content-type') || '';
-    const rawText = await response.text();
-
-    let data = null;
-
-    if (rawText) {
-      if (contentType.includes('application/json') || rawText.trim().startsWith('{')) {
-        try {
-          data = JSON.parse(rawText);
-        } catch (error) {
-          throw new Error('La respuesta del servidor no contiene JSON válido.');
-        }
-      }
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        data?.message ||
-          data?.error ||
-          `Error ${response.status}: no fue posible consultar el vehículo.`
-      );
-    }
-
-    if (!data) {
-      throw new Error('El backend devolvió una respuesta inválida.');
-    }
-
-    return normalizeLookupResponse(data, cleanPlate, cleanState);
   };
 
   const handleLookupVehicle = async (e) => {
@@ -459,7 +381,6 @@ const AdminPanel = () => {
       setLookupVerification(null);
 
       const result = await fetchVehicleLookup(plate, entity);
-      const result = await fetchVehicleLookup(plate, lookupState);
 
       setLookupVehicle(result.vehicle);
       setLookupVerification(result.verification);
@@ -482,8 +403,6 @@ const AdminPanel = () => {
       setStatusVerification(null);
 
       const result = await fetchVehicleLookup(statusPlate, statusEntity);
-
-      const result = await fetchVehicleLookup(statusPlate, statusState);
 
       setStatusVehicle(result.vehicle);
       setStatusVerification(result.verification);
@@ -1125,16 +1044,6 @@ const AdminPanel = () => {
                           if (lookupError) setLookupError('');
                         }}
                       >
-                      <label htmlFor="vehicle-lookup-state">Entidad</label>
-                      <select
-                        id="vehicle-lookup-state"
-                        value={lookupState}
-                        onChange={(e) => {
-                          setLookupState(e.target.value);
-                          if (lookupError) setLookupError('');
-                        }}
-                      >
-                        <option value="">Selecciona una entidad</option>
                         <option value="CDMX">CDMX</option>
                         <option value="EDOMEX">EDOMEX</option>
                       </select>
@@ -1205,16 +1114,6 @@ const AdminPanel = () => {
                           if (statusError) setStatusError('');
                         }}
                       >
-                      <label htmlFor="vehicle-status-state">Entidad</label>
-                      <select
-                        id="vehicle-status-state"
-                        value={statusState}
-                        onChange={(e) => {
-                          setStatusState(e.target.value);
-                          if (statusError) setStatusError('');
-                        }}
-                      >
-                        <option value="">Selecciona una entidad</option>
                         <option value="CDMX">CDMX</option>
                         <option value="EDOMEX">EDOMEX</option>
                       </select>
@@ -1320,8 +1219,4 @@ const AdminPanel = () => {
   );
 };
 
-<<<<<<< HEAD
 export default AdminPanel;
-=======
-export default AdminPanel;  
->>>>>>> 3c4045e (se agregan cambios)
