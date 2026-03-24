@@ -4,7 +4,9 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 
 const authRoutes = require("./routes/authRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 const Vehicle = require("./models/Vehicle");
+const vehicleRoutes = require("./routes/vehicleRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,6 +49,8 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/vehicles", vehicleRoutes);
 
 /* =========================
    FUNCIONES AUXILIARES
@@ -64,7 +68,11 @@ const normalizeState = (value = "") => {
   const clean = value.toUpperCase().trim();
 
   if (clean === "CDMX") return "CDMX";
-  if (clean === "EDOMEX" || clean === "ESTADO DE MEXICO" || clean === "ESTADO DE MÉXICO") {
+  if (
+    clean === "EDOMEX" ||
+    clean === "ESTADO DE MEXICO" ||
+    clean === "ESTADO DE MÉXICO"
+  ) {
     return "EDOMEX";
   }
 
@@ -372,99 +380,6 @@ const evaluateCirculation = ({ plate, holograma }) => {
   };
 };
 
-/* =========================
-   REGISTRAR VEHÍCULO
-========================= */
-
-app.post("/api/vehicles", async (req, res) => {
-  try {
-    const currentYear = new Date().getFullYear();
-    const maxModelYear = currentYear + 2;
-
-    const entidad = normalizeState(req.body.entidad || "");
-    const placa = normalizePlate(req.body.placa || "");
-    const placaNormalizada = normalizeRawPlate(req.body.placa || "");
-    const modelo = Number(req.body.modelo);
-    const holograma = String(req.body.holograma || "").trim();
-    const marca = String(req.body.marca || "").trim();
-    const submodelo = String(req.body.submodelo || "").trim();
-    const color = String(req.body.color || "").trim();
-
-    if (!entidad) {
-      return res.status(400).json({
-        message: "Selecciona una entidad válida."
-      });
-    }
-
-    if (!placa || !isValidPlateFormatByState(placa, entidad)) {
-      return res.status(400).json({
-        message:
-          entidad === "CDMX"
-            ? "La placa no coincide con un formato válido de CDMX."
-            : "La placa no coincide con un formato válido del Estado de México."
-      });
-    }
-
-    if (!Number.isFinite(modelo) || modelo < 1950 || modelo > maxModelYear) {
-      return res.status(400).json({
-        message: `El modelo debe estar entre 1950 y ${maxModelYear}.`
-      });
-    }
-
-    if (!["00", "0", "1", "2"].includes(holograma)) {
-      return res.status(400).json({
-        message: "Selecciona un holograma válido."
-      });
-    }
-
-    const existingVehicle = await Vehicle.findOne({
-      entidad,
-      placaNormalizada
-    });
-
-    if (existingVehicle) {
-      return res.status(409).json({
-        message: "Esta placa ya está registrada en esa entidad."
-      });
-    }
-
-    const vehicleData = {
-      entidad,
-      placa,
-      placaNormalizada,
-      modelo,
-      holograma,
-      marca,
-      submodelo,
-      color
-    };
-
-    if (req.body.ownerEmail) vehicleData.ownerEmail = req.body.ownerEmail;
-    if (req.body.ownerFullName) vehicleData.ownerFullName = req.body.ownerFullName;
-    if (req.body.imagen) vehicleData.imagen = req.body.imagen;
-
-    const vehicle = new Vehicle(vehicleData);
-
-    await vehicle.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Vehículo registrado correctamente.",
-      vehicle
-    });
-  } catch (error) {
-    console.error("Error registrando vehículo:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Error del servidor al registrar el vehículo."
-    });
-  }
-});
-
-/* =========================
-   CONSULTAR CIRCULACIÓN
-========================= */
-
 app.get("/api/circula/:placa", async (req, res) => {
   try {
     const placaParam = normalizePlate(req.params.placa || "");
@@ -511,7 +426,7 @@ app.get("/api/circula/:placa", async (req, res) => {
           },
           {
             $or: [
-              { estado },
+              { estado: estado },
               { entidad: estado }
             ]
           }
@@ -545,8 +460,6 @@ app.get("/api/circula/:placa", async (req, res) => {
         documentos: []
       });
     }
-
-    console.log("VEHICLE ENCONTRADO:", vehicle);
 
     const hologramaFinal = vehicle.holograma || holograma;
     const circulation = evaluateCirculation({
