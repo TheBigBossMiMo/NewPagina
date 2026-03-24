@@ -537,6 +537,9 @@
     padding: 1.2rem;
   }
 
+}
+
+
   .info-section-header {
     border-radius: 16px;
     padding: 1rem 0.9rem;
@@ -546,3 +549,4 @@
     width: 110px;
   }
 }
+
