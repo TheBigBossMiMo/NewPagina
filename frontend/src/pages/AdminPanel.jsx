@@ -10,7 +10,7 @@ const API_BASE =
   window.location.hostname === 'localhost'
     ? 'http://localhost:3000'
     : 'https://hoynocircula-backend.onrender.com';
-
+   
 const imageSections = [
   {
     id: 1,
@@ -1320,4 +1320,8 @@ const AdminPanel = () => {
   );
 };
 
+<<<<<<< HEAD
 export default AdminPanel;
+=======
+export default AdminPanel;  
+>>>>>>> 3c4045e (se agregan cambios)
